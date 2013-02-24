@@ -11,6 +11,7 @@
 #include FT_FREETYPE_H
 
 #include "graphic.h"
+#include "jpeg.h"
 #include "pixel.h"
 #include "png.h"
 #include "utf8.h"
@@ -73,12 +74,11 @@ void PrintLetter(wchar_t letter) {
   }
 }
 
-void PrintImage(const string& path) {
-  Graphic png = LoadPNG(path).BilinearScale(120, 50);
+void PrintImage(Graphic graphic) {
   CharQuantizer char_quantizer(DecodeUTF8(FLAGS_chars), 256);
-  for (int y = 0; y < png.height(); ++y) {
-    for (int x = 0; x < png.width(); ++x) {
-      Pixel pix = png.Get(x, y);
+  for (int y = 0; y < graphic.height(); ++y) {
+    for (int x = 0; x < graphic.width(); ++x) {
+      Pixel pix = graphic.Get(x, y);
       cout << "\x1b[";
       if (pix.alpha() > 0.0) {
         cout << "38;5;" << (int)rgb_to_xterm256(pix);
@@ -100,7 +100,8 @@ int main(int argc, char** argv) {
   google::InstallFailureSignalHandler();
   std::locale::global(std::locale("en_US.utf8"));
   // PrintLetter('a');
-  PrintImage("/home/jart/balls.png");
+  PrintImage(LoadPNG("/home/jart/balls.png").BilinearScale(120, 50));
+  PrintImage(LoadJPEG("/home/jart/obama.jpg").BilinearScale(150, 100));
   return 0;
 }
 
