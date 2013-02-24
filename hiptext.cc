@@ -99,9 +99,9 @@ int main(int argc, char** argv) {
   google::InitGoogleLogging(argv[0]);
   google::InstallFailureSignalHandler();
   std::locale::global(std::locale("en_US.utf8"));
-  // PrintLetter('a');
-  PrintImage(LoadPNG("/home/jart/balls.png").BilinearScale(120, 50));
-  PrintImage(LoadJPEG("/home/jart/obama.jpg").BilinearScale(150, 100));
+  PrintLetter('a');
+  PrintImage(LoadPNG("balls.png").BilinearScale(120, 50));
+  PrintImage(LoadJPEG("obama.jpg").BilinearScale(150, 100));
   return 0;
 }
 

@@ -30,8 +30,6 @@ Graphic LoadJPEG(const std::string& path) {
   CHECK(jpeg_read_header(&cinfo, TRUE) == JPEG_HEADER_OK);
   CHECK(jpeg_start_decompress(&cinfo) == TRUE);
   int stride = cinfo.output_width * cinfo.output_components;
-  printf("%d x %d\n", cinfo.output_width, cinfo.output_height);
-  printf("%d\n", cinfo.output_components);
   uint8_t* line = (uint8_t*)malloc(stride);
   uint8_t* buffer[] = { line };
   std::vector<Pixel> pixels;
