@@ -11,6 +11,7 @@
 #include FT_FREETYPE_H
 
 #include "graphic.h"
+#include "pixel.h"
 #include "png.h"
 #include "utf8.h"
 #include "xterm256.h"
@@ -34,9 +35,7 @@ int GetFontLoadFlags() {
 
 class CharQuantizer {
  public:
-  CharQuantizer(const wstring& chars, int size)
-      : size_(size),
-        map_(new wchar_t[size]) {
+  CharQuantizer(const wstring& chars, int size) : map_(size) {
     const int segment_size = size / chars.size() + 1;
     for (int n = 0; n < size; ++n) {
       map_[n] = chars[n / segment_size];
@@ -44,7 +43,7 @@ class CharQuantizer {
   }
 
   inline wchar_t Quantize(int color) const {
-    DCHECK(0 <= color && color < size_);
+    DCHECK(0 <= color && color < map_.size());
     return map_[color];
   }
 
@@ -52,8 +51,7 @@ class CharQuantizer {
   void operator=(const CharQuantizer& other) = delete;
 
  private:
-  int size_;
-  std::unique_ptr<wchar_t[]> map_;
+  std::vector<wchar_t> map_;
 };
 
 void PrintLetter(wchar_t letter) {
@@ -82,13 +80,13 @@ void PrintImage(const string& path) {
     for (int x = 0; x < png.width(); ++x) {
       Pixel pix = png.Get(x, y);
       cout << "\x1b[";
-      if (pix.a > 0.5) {
+      if (pix.alpha() > 0.0) {
         cout << "38;5;" << (int)rgb_to_xterm256(pix);
       } else {
         cout << "0";
       }
       cout << "m";
-      cout << char_quantizer.Quantize((int)(pix.grey() * 255.0));
+      cout << char_quantizer.Quantize((int)(pix.grey() * pix.alpha() * 255.0));
     }
     cout << "\x1b[0m\n";
   }
@@ -103,7 +101,6 @@ int main(int argc, char** argv) {
   std::locale::global(std::locale("en_US.utf8"));
   // PrintLetter('a');
   PrintImage("/home/jart/balls.png");
-  // cout << "\x1b[38;5;" << (int)rgb_to_xterm256(rgb256(255, 0, 0)) << "mhello\x1b[0m\n";
   return 0;
 }
 

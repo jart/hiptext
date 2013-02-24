@@ -4,7 +4,8 @@
 #include <utility>
 #include <vector>
 #include <glog/logging.h>
-#include "pixel.h"
+
+class Pixel;
 
 class Graphic {
  public:

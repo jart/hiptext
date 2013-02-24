@@ -1,6 +1,7 @@
 #include "graphic.h"
 #include <cmath>
 #include <algorithm>
+#include "pixel.h"
 
 Graphic Graphic::BilinearScale(int new_width, int new_height) {
   Graphic res(new_width, new_height);
@@ -18,10 +19,11 @@ Graphic Graphic::BilinearScale(int new_width, int new_height) {
       const Pixel& tr = Get(xr, yt);
       const Pixel& bl = Get(xl, yb);
       const Pixel& br = Get(xr, yb);
-      res.Get(x, y) = Pixel((tl.r + tr.r + bl.r + br.r) / 4,
-                            (tl.g + tr.g + bl.g + br.g) / 4,
-                            (tl.b + tr.b + bl.b + br.b) / 4,
-                            (tl.a + tr.a + bl.a + br.a) / 4);
+      res.Get(x, y) = Pixel(
+          (tl.red() + tr.red() + bl.red() + br.red()) / 4,
+          (tl.green() + tr.green() + bl.green() + br.green()) / 4,
+          (tl.blue() + tr.blue() + bl.blue() + br.blue()) / 4,
+          (tl.alpha() + tr.alpha() + bl.alpha() + br.alpha()) / 4);
     }
   }
   return res;
