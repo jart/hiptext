@@ -45,6 +45,7 @@ Pixel& Pixel::Overlay(const Pixel& other) {
     red_ = red_ * (1.0 - other.alpha_) + other.red_ * other.alpha_;
     green_ = green_ * (1.0 - other.alpha_) + other.green_ * other.alpha_;
     blue_ = blue_ * (1.0 - other.alpha_) + other.blue_ * other.alpha_;
+    alpha_ = 1.0;
   }
   return *this;
 }

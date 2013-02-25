@@ -23,10 +23,10 @@ class Pixel {
   inline float alpha() const { return alpha_; }
   inline float grey() const { return (red_ + green_ + blue_) / 3.0 * alpha_; }
 
-  inline void set_red(float red) { red_ = red; }
-  inline void set_green(float green) { green_ = green; }
-  inline void set_blue(float blue) { blue_ = blue; }
-  inline void set_alpha(float alpha) { alpha_ = alpha; }
+  inline Pixel& set_red(float red) { red_ = red; return *this; }
+  inline Pixel& set_green(float green) { green_ = green; return *this; }
+  inline Pixel& set_blue(float blue) { blue_ = blue; return *this; }
+  inline Pixel& set_alpha(float alpha) { alpha_ = alpha; return *this; }
 
   Pixel Copy() const { return *this; }
   Pixel& Overlay(const Pixel& other);
@@ -37,6 +37,13 @@ class Pixel {
   static Pixel Parse(const std::string& name);
   static Pixel HSL(float hue, float sat, float lit, float alpha = 1.0);
   static float HueToRGB(float m1, float m2, float h);
+
+  bool operator==(const Pixel& other) const {
+    return (red_ == other.red_ &&
+            green_ == other.green_ &&
+            blue_ == other.blue_ &&
+            alpha_ == other.alpha_);
+  }
 
  private:
   float red_;

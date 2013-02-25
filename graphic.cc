@@ -51,6 +51,22 @@ Graphic& Graphic::Opacify(const Pixel& background) {
   return *this;
 }
 
+Pixel Graphic::GetAverageColor() const {
+  double avg_red = 0.0;
+  double avg_green = 0.0;
+  double avg_blue = 0.0;
+  for (int y = 0; y < height_; ++y) {
+    for (int x = 0; x < width_; ++x) {
+      avg_red += Get(x, y).red();
+      avg_green += Get(x, y).green();
+      avg_blue += Get(x, y).blue();
+    }
+  }
+  return Pixel(avg_red / (width_ * height_),
+               avg_green / (width_ * height_),
+               avg_blue / (width_ * height_));
+}
+
 // For Emacs:
 // Local Variables:
 // mode:c++
