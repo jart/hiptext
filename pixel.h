@@ -11,8 +11,9 @@ class Pixel {
   static const Pixel kClear;
   static const Pixel kBlack;
   static const Pixel kWhite;
+  static const Pixel kGreen;
 
-  constexpr Pixel() : red_(0.0), green_(0.0), blue_(0.0), alpha_(1.0) {}
+  constexpr Pixel() : red_(0.0), green_(0.0), blue_(0.0), alpha_(0.0) {}
   constexpr Pixel(float red, float green, float blue, float alpha = 1.0)
       : red_(red), green_(green), blue_(blue), alpha_(alpha) {}
 
@@ -27,8 +28,10 @@ class Pixel {
   inline void set_blue(float blue) { blue_ = blue; }
   inline void set_alpha(float alpha) { alpha_ = alpha; }
 
+  Pixel Copy() const { return *this; }
+  Pixel& Overlay(const Pixel& other);
+  Pixel& Opacify(const Pixel& background);
   float Distance(const Pixel& other) const;
-  Pixel Opacify(const Pixel& background) const;
   std::string ToString() const;
 
   static Pixel Parse(const std::string& name);

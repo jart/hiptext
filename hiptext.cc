@@ -32,6 +32,7 @@ DEFINE_int32(font_size, 11, "The size of the font in points.");
 DEFINE_int32(font_res, 300, "The font dots per inch resoltuion.");
 DEFINE_bool(hinting, true, "Enable font hinting.");
 DEFINE_bool(color, true, "Enable xterm color.");
+DEFINE_string(bg, "black", "The background color of your terminal.");
 
 int GetFontLoadFlags() {
   return FT_LOAD_RENDER | (FLAGS_hinting ? 0 : FT_LOAD_NO_HINTING);
@@ -52,9 +53,6 @@ Graphic LoadLetter(FT_Face face, wchar_t letter, Pixel color) {
   const int baseline = (face->height - face->glyph->metrics.horiBearingY) >> 6;
   const int offset_x = face->glyph->metrics.horiBearingX >> 6;
   const int offset_y = baseline;
-  printf("%dx%d\n", width, height);
-  printf("%d\n", baseline);
-  printf("%dx%d\n", offset_x, offset_y);
   Graphic graphic(width, height);
   for (int y = 0; y < bitmap->rows; ++y) {
     for (int x = 0; x < bitmap->width; ++x) {
@@ -73,12 +71,12 @@ Graphic LoadLetter(FT_Face face, wchar_t letter, Pixel color) {
 
 wstring Xterm256Pixel(const Pixel& pixel, const Pixel& background) {
   int fg_code = rgb_to_xterm256(pixel);
-  int bg_code = rgb_to_xterm256(pixel.Opacify(background));
+  int bg_code = rgb_to_xterm256(pixel.Copy().Opacify(background));
   return (L"\x1b[38;5;" + std::to_wstring(fg_code) + L"m" +
           L"\x1b[48;5;" + std::to_wstring(bg_code) + L"m");
 }
 
-void PrintImage(Graphic graphic, Pixel background) {
+void PrintImage(Graphic graphic, const Pixel& background) {
   CharQuantizer char_quantizer(DecodeUTF8(FLAGS_chars), 256);
   for (int y = 0; y < graphic.height(); ++y) {
     for (int x = 0; x < graphic.width(); ++x) {
@@ -133,18 +131,15 @@ int main(int argc, char** argv) {
   google::InitGoogleLogging(argv[0]);
   google::InstallFailureSignalHandler();
   std::locale::global(std::locale("en_US.utf8"));
-  cout << Pixel::Parse("rgb(254, 255, 255)") << "\n";
-  cout << Pixel::Parse("rgb(100%, 50%, 255)") << "\n";
-  cout << Pixel::Parse("rgba(100%, 50%, 255, .0)") << "\n";
-  cout << Pixel::Parse("tomato") << "\n";
-  return 0;
   FT_Library library;
   FT_Face face;
   CHECK(FT_Init_FreeType(&library) == 0);
+  Pixel bg = Pixel::Parse(FLAGS_bg);
   CHECK(FT_New_Face(library, FLAGS_font.c_str(), FLAGS_font_index, &face) == 0);
   CHECK(FT_Set_Char_Size(face, FLAGS_font_size << 6, 0, FLAGS_font_res,0) == 0);
-  PrintImage(LoadPNG("balls.png").BilinearScale(120, 50), Pixel::kBlack);
-  PrintImage(LoadJPEG("obama.jpg").BilinearScale(150, 100), Pixel::kBlack);
+  PrintImage(LoadPNG("balls.png").BilinearScale(120, 50), bg);
+  PrintImage(LoadJPEG("obama.jpg").BilinearScale(150, 100), bg);
+  PrintImage(LoadLetter(face, '@', Pixel::kBlack).Opacify(Pixel::kWhite), bg);
   PrintImage(LoadLetter(face, '@', Pixel::kBlack), Pixel::kWhite);
   return 0;
 }

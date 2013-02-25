@@ -1,7 +1,7 @@
 
 #line 1 "pixel_parse.rl"
 // -*- C++ -*-
-// Complete CSS3 Color Parser Implementation
+// Complete CSS3/X11 Color Parser Implementation
 
 #include "pixel.h"
 #include <cstdlib>

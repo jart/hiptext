@@ -3,7 +3,7 @@
 #include <algorithm>
 #include "pixel.h"
 
-Graphic Graphic::BilinearScale(int new_width, int new_height) {
+Graphic Graphic::BilinearScale(int new_width, int new_height) const {
   Graphic res(new_width, new_height);
   double rx = (double)width_ / (double)res.width_;
   double ry = (double)height_ / (double)res.height_;
@@ -27,6 +27,28 @@ Graphic Graphic::BilinearScale(int new_width, int new_height) {
     }
   }
   return res;
+}
+
+Graphic& Graphic::Overlay(Graphic graphic, int offset_x, int offset_y) {
+  for (int y1 = offset_y, y2 = 0;
+       y1 < height_ && y2 < graphic.height_;
+       ++y1, ++y2) {
+    for (int x1 = offset_x, x2 = 0;
+         x1 < width_ && x2 < graphic.width_;
+         ++x1, ++x2) {
+      Get(x1, y1).Overlay(graphic.Get(x2, y2));
+    }
+  }
+  return *this;
+}
+
+Graphic& Graphic::Opacify(const Pixel& background) {
+  for (int y = 0; y < height_; ++y) {
+    for (int x = 0; x < width_; ++x) {
+      Get(x, y).Opacify(background);
+    }
+  }
+  return *this;
 }
 
 // For Emacs:

@@ -14,6 +14,11 @@ class Graphic {
       height_(height),
       pixels_(width * height) {}
 
+  Graphic(int width, int height, const Pixel& pixel)
+    : width_(width),
+      height_(height),
+      pixels_(width * height, pixel) {}
+
   Graphic(int width, int height, std::vector<Pixel>&& pixels)
       : width_(width),
         height_(height),
@@ -22,13 +27,22 @@ class Graphic {
   inline int width() const { return width_; }
   inline int height() const { return height_; }
 
+  inline const Pixel& Get(int x, int y) const {
+    DCHECK(0 <= x && x < width_);
+    DCHECK(0 <= y && y < height_);
+    return pixels_[y * width_ + x];
+  }
+
   inline Pixel& Get(int x, int y) {
     DCHECK(0 <= x && x < width_);
     DCHECK(0 <= y && y < height_);
     return pixels_[y * width_ + x];
   }
 
-  Graphic BilinearScale(int new_width, int new_height);
+  Graphic Copy() const { return *this; }
+  Graphic& Overlay(Graphic graphic, int offset_x = 0, int offset_y = 0);
+  Graphic& Opacify(const Pixel& background);
+  Graphic BilinearScale(int new_width, int new_height) const;
 
  private:
   int width_;

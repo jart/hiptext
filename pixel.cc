@@ -4,6 +4,7 @@
 const Pixel Pixel::kClear = Pixel(0.0, 0.0, 0.0, 0.0);
 const Pixel Pixel::kBlack = Pixel(0.0, 0.0, 0.0, 1.0);
 const Pixel Pixel::kWhite = Pixel(1.0, 1.0, 1.0, 1.0);
+const Pixel Pixel::kGreen = Pixel(0.0, 1.0, 0.0, 1.0);
 
 template<typename T>
 constexpr inline T sqr(T val) {
@@ -34,14 +35,32 @@ float Pixel::Distance(const Pixel& other) const {
                    sqr(blue_ - other.blue_));
 }
 
-Pixel Pixel::Opacify(const Pixel& background) const {
-  if (alpha_ == 1.0) {
-    return *this;
+Pixel& Pixel::Overlay(const Pixel& other) {
+  if (other.alpha_ == 0.0) {
+    // Do nothing.
+  } else if (other.alpha_ == 1.0) {
+    *this = other;
   } else {
-    return Pixel(red_ * alpha_ + background.red_ * (1.0 - alpha_),
-                 green_ * alpha_ + background.green_ * (1.0 - alpha_),
-                 blue_ * alpha_ + background.blue_ * (1.0 - alpha_));
+    // todo fix me
+    red_ = red_ * (1.0 - other.alpha_) + other.red_ * other.alpha_;
+    green_ = green_ * (1.0 - other.alpha_) + other.green_ * other.alpha_;
+    blue_ = blue_ * (1.0 - other.alpha_) + other.blue_ * other.alpha_;
   }
+  return *this;
+}
+
+Pixel& Pixel::Opacify(const Pixel& background) {
+  if (alpha_ == 1.0) {
+    // Do nothing.
+  } else if (alpha_ == 0.0) {
+    *this = background;
+  } else {
+    red_ = red_ * alpha_ + background.red_ * (1.0 - alpha_);
+    green_ = green_ * alpha_ + background.green_ * (1.0 - alpha_);
+    blue_ = blue_ * alpha_ + background.blue_ * (1.0 - alpha_);
+    alpha_ = 1.0;
+  }
+  return *this;
 }
 
 std::string Pixel::ToString() const {
