@@ -1,4 +1,5 @@
 #include <cstdio>
+#include <unistd.h>
 #include <iostream>
 #include <locale>
 #include <memory>
@@ -10,6 +11,7 @@
 #include <ft2build.h>
 #include FT_FREETYPE_H
 
+#include "charquantizer.h"
 #include "graphic.h"
 #include "jpeg.h"
 #include "pixel.h"
@@ -21,87 +23,129 @@ using std::cout;
 using std::string;
 using std::wstring;
 
-DEFINE_string(chars, u8" \u2591\u2592\u2593\u2588",
+DEFINE_string(chars, u8"\u00A0\u2591\u2592\u2593\u2588",
               "The quantization character array.");
 DEFINE_string(font, "/usr/share/fonts/truetype/ttf-dejavu/DejaVuSansMono.ttf",
               "The path to the font .ttf file to use.");
 DEFINE_int32(font_index, 0, "Index of face to use inside font .ttf file.");
-DEFINE_int32(font_width, 64, "The nominal font char width in pixels.");
-DEFINE_int32(font_height, 64, "The nominal font char height in pixels.");
-DEFINE_bool(hinting, false, "Enable font hinting.");
+DEFINE_int32(font_size, 11, "The size of the font in points.");
+DEFINE_int32(font_res, 300, "The font dots per inch resoltuion.");
+DEFINE_bool(hinting, true, "Enable font hinting.");
+DEFINE_bool(color, true, "Enable xterm color.");
 
 int GetFontLoadFlags() {
   return FT_LOAD_RENDER | (FLAGS_hinting ? 0 : FT_LOAD_NO_HINTING);
 }
 
-class CharQuantizer {
- public:
-  CharQuantizer(const wstring& chars, int size) : map_(size) {
-    const int segment_size = size / chars.size() + 1;
-    for (int n = 0; n < size; ++n) {
-      map_[n] = chars[n / segment_size];
-    }
+void Pad(int amt, char ch) {
+  for (int n = 0; n < amt; ++n) {
+    cout << ch;
   }
+}
 
-  inline wchar_t Quantize(int color) const {
-    DCHECK(0 <= color && color < map_.size());
-    return map_[color];
-  }
-
-  CharQuantizer(const CharQuantizer& other) = delete;
-  void operator=(const CharQuantizer& other) = delete;
-
- private:
-  std::vector<wchar_t> map_;
-};
-
-void PrintLetter(wchar_t letter) {
-  FT_Library library;
-  FT_Face face;
-  CHECK(FT_Init_FreeType(&library) == 0);
-  CHECK(FT_New_Face(library, FLAGS_font.c_str(), FLAGS_font_index, &face) == 0);
-  CHECK(FT_Set_Pixel_Sizes(face, FLAGS_font_width, FLAGS_font_height) == 0);
+Graphic LoadLetter(FT_Face face, wchar_t letter, Pixel color) {
   CHECK(FT_Load_Char(face, letter, GetFontLoadFlags()) == 0);
-  CharQuantizer char_quantizer(DecodeUTF8(FLAGS_chars), 256);
   FT_Bitmap* bitmap = &face->glyph->bitmap;
   CHECK(bitmap->pixel_mode == FT_PIXEL_MODE_GRAY);
+  const int width = face->glyph->metrics.horiAdvance >> 6;
+  const int height = face->glyph->metrics.vertAdvance >> 6;
+  const int baseline = (face->height - face->glyph->metrics.horiBearingY) >> 6;
+  const int offset_x = face->glyph->metrics.horiBearingX >> 6;
+  const int offset_y = baseline;
+  printf("%dx%d\n", width, height);
+  printf("%d\n", baseline);
+  printf("%dx%d\n", offset_x, offset_y);
+  Graphic graphic(width, height);
   for (int y = 0; y < bitmap->rows; ++y) {
     for (int x = 0; x < bitmap->width; ++x) {
-      int pixel = bitmap->buffer[y * bitmap->width + x];
-      cout << char_quantizer.Quantize(pixel);
+      uint8_t grey = bitmap->buffer[y * bitmap->width + x];
+      if (grey) {
+        Pixel& pixel = graphic.Get(x + offset_x, y + offset_y);
+        pixel.set_red(color.red());
+        pixel.set_green(color.green());
+        pixel.set_blue(color.blue());
+        pixel.set_alpha(Color256(grey));
+      }
+    }
+  }
+  return graphic;
+}
+
+wstring Xterm256Pixel(const Pixel& pixel, const Pixel& background) {
+  int fg_code = rgb_to_xterm256(pixel);
+  int bg_code = rgb_to_xterm256(pixel.Opacify(background));
+  return (L"\x1b[38;5;" + std::to_wstring(fg_code) + L"m" +
+          L"\x1b[48;5;" + std::to_wstring(bg_code) + L"m");
+}
+
+void PrintImage(Graphic graphic, Pixel background) {
+  CharQuantizer char_quantizer(DecodeUTF8(FLAGS_chars), 256);
+  for (int y = 0; y < graphic.height(); ++y) {
+    for (int x = 0; x < graphic.width(); ++x) {
+      Pixel pixel = graphic.Get(x, y);
+      if (FLAGS_color) {
+        cout << Xterm256Pixel(pixel, background);
+      }
+      cout << char_quantizer.Quantize(ColorTo256(pixel.grey()));
+    }
+    if (FLAGS_color) {
+      cout << "\x1b[0m";
     }
     cout << "\n";
   }
 }
 
-void PrintImage(Graphic graphic) {
-  CharQuantizer char_quantizer(DecodeUTF8(FLAGS_chars), 256);
-  for (int y = 0; y < graphic.height(); ++y) {
-    for (int x = 0; x < graphic.width(); ++x) {
-      Pixel pix = graphic.Get(x, y);
-      cout << "\x1b[";
-      if (pix.alpha() > 0.0) {
-        cout << "38;5;" << (int)rgb_to_xterm256(pix);
-      } else {
-        cout << "0";
-      }
-      cout << "m";
-      cout << char_quantizer.Quantize((int)(pix.grey() * pix.alpha() * 255.0));
-    }
-    cout << "\x1b[0m\n";
+void Dimensions(FT_Face face) {
+  int max_width = 0;
+  int max_rows = 0;
+  for (int letter = ' '; letter <= '~'; ++letter) {
+    CHECK(FT_Load_Char(face, letter, GetFontLoadFlags()) == 0);
+    FT_Bitmap* bitmap = &face->glyph->bitmap;
+    CHECK(bitmap->pixel_mode == FT_PIXEL_MODE_GRAY);
+    printf("%c = %03d x %03d off %dx%d metrics=%ld-%ld %ld-%ld\n",
+           letter, bitmap->width, bitmap->rows,
+           face->glyph->bitmap_left,
+           face->glyph->bitmap_top,
+           face->glyph->metrics.horiBearingX >> 6,
+           face->glyph->metrics.horiBearingY >> 6,
+           face->glyph->metrics.horiAdvance >> 6,
+           face->glyph->metrics.vertAdvance >> 6);
+    if (bitmap->width > max_width)
+      max_width = bitmap->width;
+    if (bitmap->rows > max_rows)
+      max_rows = bitmap->rows;
   }
+  printf("max = %03d x %03d\n", max_width, max_rows);
+  printf("ascender = %d\n", face->ascender >> 6);
+  printf("descender = %d\n", face->descender >> 6);
+  printf("height = %d\n", face->height >> 6);
+  printf("bbox x=%ld-%ld y=%ld-%ld\n",
+         face->bbox.xMin >> 6, face->bbox.xMax >> 6,
+         face->bbox.yMin >> 6, face->bbox.yMax >> 6);
 }
 
 int main(int argc, char** argv) {
+  if (!isatty(1))
+    FLAGS_color = false;
   google::SetUsageMessage("hiptext [FLAGS]");
   google::SetVersionString("0.1");
   google::ParseCommandLineFlags(&argc, &argv, true);
   google::InitGoogleLogging(argv[0]);
   google::InstallFailureSignalHandler();
   std::locale::global(std::locale("en_US.utf8"));
-  PrintLetter('a');
-  PrintImage(LoadPNG("balls.png").BilinearScale(120, 50));
-  PrintImage(LoadJPEG("obama.jpg").BilinearScale(150, 100));
+  cout << Pixel::Parse("rgb(254, 255, 255)") << "\n";
+  cout << Pixel::Parse("rgb(100%, 50%, 255)") << "\n";
+  cout << Pixel::Parse("rgba(100%, 50%, 255, .0)") << "\n";
+  cout << Pixel::Parse("tomato") << "\n";
+  return 0;
+  FT_Library library;
+  FT_Face face;
+  CHECK(FT_Init_FreeType(&library) == 0);
+  CHECK(FT_New_Face(library, FLAGS_font.c_str(), FLAGS_font_index, &face) == 0);
+  CHECK(FT_Set_Char_Size(face, FLAGS_font_size << 6, 0, FLAGS_font_res,0) == 0);
+  PrintImage(LoadPNG("balls.png").BilinearScale(120, 50), Pixel::kBlack);
+  PrintImage(LoadJPEG("obama.jpg").BilinearScale(150, 100), Pixel::kBlack);
+  PrintImage(LoadLetter(face, '@', Pixel::kBlack), Pixel::kWhite);
   return 0;
 }
 

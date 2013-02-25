@@ -1,44 +1,36 @@
 #include "xterm256.h"
-#include <cmath>
-#include <cstdio>
 #include "pixel.h"
+#include <glog/logging.h>
 
 static uint8_t g_cube_steps[] = { 0x00, 0x5F, 0x87, 0xAF, 0xD7, 0xFF };
 
 // These colors vary wildly based on the palette of the terminal emulator.
 static Pixel g_basic16[] = {
-  rgb256(  0,   0,   0), rgb256(205,   0,   0), rgb256(  0, 205,   0),
-  rgb256(205, 205,   0), rgb256(  0,   0, 238), rgb256(205,   0, 205),
-  rgb256(  0, 205, 205), rgb256(229, 229, 229), rgb256(127, 127, 127),
-  rgb256(255,   0,   0), rgb256(  0, 255,   0), rgb256(255, 255,   0),
-  rgb256( 92,  92, 255), rgb256(255,   0, 255), rgb256(  0, 255, 255),
-  rgb256(255, 255, 255)
+  RGB256(  0,   0,   0), RGB256(205,   0,   0), RGB256(  0, 205,   0),
+  RGB256(205, 205,   0), RGB256(  0,   0, 238), RGB256(205,   0, 205),
+  RGB256(  0, 205, 205), RGB256(229, 229, 229), RGB256(127, 127, 127),
+  RGB256(255,   0,   0), RGB256(  0, 255,   0), RGB256(255, 255,   0),
+  RGB256( 92,  92, 255), RGB256(255,   0, 255), RGB256(  0, 255, 255),
+  RGB256(255, 255, 255)
 };
 
 constexpr Pixel CalculateXtermToRGB(uint8_t xcolor) {
   return ((xcolor < 16)
           ? g_basic16[xcolor]
           : ((xcolor < 232)
-             ? rgb256(g_cube_steps[((xcolor - 16) / 36) % 6],
+             ? RGB256(g_cube_steps[((xcolor - 16) / 36) % 6],
                       g_cube_steps[((xcolor - 16) / 6) % 6],
                       g_cube_steps[(xcolor - 16) % 6])
-             : grey256(8 + (xcolor - 232) * 0x0A)));
-}
-
-template<typename T>
-inline T sqr(T val) {
-  return val * val;
+             : Grey256(8 + (xcolor - 232) * 0x0A)));
 }
 
 uint8_t rgb_to_xterm(const Pixel& pix, int begin, int end) {
   DCHECK(0 <= begin && begin <= 256) << begin;
   DCHECK(0 <= end && end <= 256) << end;
   uint8_t best_match = 0;
-  double smallest_distance = 1e9;
+  float smallest_distance = 1e9;
   for (int c = begin; c < end; ++c) {
-    double dist = sqrt(sqr(g_xterm[c].red() - pix.red()) +
-                       sqr(g_xterm[c].green() - pix.green()) +
-                       sqr(g_xterm[c].blue() - pix.blue()));
+    float dist = g_xterm[c].Distance(pix);
     if (dist < smallest_distance) {
       smallest_distance = dist;
       best_match = c;

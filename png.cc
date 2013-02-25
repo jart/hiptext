@@ -8,10 +8,6 @@
 #include "pixel.h"
 #include "graphic.h"
 
-static inline float f8(uint8_t c) {
-  return (float)c / 255.0;
-}
-
 Graphic LoadPNG(const std::string& path) {
   png_struct* png_;
   png_info* info_;
@@ -46,12 +42,13 @@ Graphic LoadPNG(const std::string& path) {
     uint8_t* row = rows[y];
     if (type == PNG_COLOR_TYPE_RGBA) {
       for (int x = 0; x < width * 4; x += 4) {
-        pixels.emplace_back(f8(row[x]), f8(row[x+1]), f8(row[x+2]),
-                            f8(row[x+3]));
+        pixels.emplace_back(Color256(row[x]), Color256(row[x+1]),
+                            Color256(row[x+2]), Color256(row[x+3]));
       }
     } else {
       for (int x = 0; x < width * 3; x += 3) {
-        pixels.emplace_back(f8(row[x]), f8(row[x+1]), f8(row[x+2]));
+        pixels.emplace_back(Color256(row[x]), Color256(row[x+1]),
+                            Color256(row[x+2]));
       }
     }
     free(row);

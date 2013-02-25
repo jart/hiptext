@@ -5,14 +5,18 @@ CXXFLAGS=-std=c++11 -Wall -pedantic -g -O2 -pipe -MD \
 	$(shell freetype-config --cflags)
 LDFLAGS=-lm -lglog -lgflags -lpng -ljpeg \
 	$(shell freetype-config --libs)
-SRCS=hiptext.cc utf8.cc png.cc jpeg.cc pixel.cc graphic.cc xterm256.cc
+SRCS=hiptext.cc utf8.cc png.cc jpeg.cc pixel.cc graphic.cc xterm256.cc \
+	charquantizer.cc pixel_parse.cc
 OBJS=$(SRCS:.cc=.o)
 DEPS=$(OBJS:.o=.d)
 
 all: hiptext
 hiptext: $(OBJS)
 
+%.cc: %.rl
+	ragel -o $@ $<
+
 clean:
-	$(RM) hiptext $(OBJS) $(DEPS)
+	$(RM) hiptext $(OBJS) $(DEPS) pixel_parse.cc
 
 -include $(DEPS)

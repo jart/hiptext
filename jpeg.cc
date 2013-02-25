@@ -8,10 +8,6 @@
 #include "pixel.h"
 #include "graphic.h"
 
-static inline float f8(uint8_t c) {
-  return (float)c / 255.0;
-}
-
 static void OnError(j_common_ptr cinfo) {
   char buffer[JMSG_LENGTH_MAX];
   cinfo->err->format_message(cinfo, buffer);
@@ -36,7 +32,7 @@ Graphic LoadJPEG(const std::string& path) {
   while (cinfo.output_scanline < cinfo.output_height) {
     jpeg_read_scanlines(&cinfo, buffer, 1);
     for (int n = 0; n < stride; n += cinfo.output_components) {
-      pixels.push_back(rgb256(line[n], line[n + 1], line[n + 2]));
+      pixels.push_back(RGB256(line[n], line[n + 1], line[n + 2]));
     }
   }
   jpeg_finish_decompress(&cinfo);
