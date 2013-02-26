@@ -6,6 +6,7 @@
 class Graphic;
 
 Graphic LoadPNG(const std::string& path);
+void WritePNG(const Graphic& graphic, const std::string& path);
 
 #endif  // HIPTEXT_PNG_H_
 

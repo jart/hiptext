@@ -1,5 +1,6 @@
 #include <cstdio>
 #include <unistd.h>
+#include <sys/ioctl.h>
 #include <iostream>
 #include <locale>
 #include <memory>
@@ -50,6 +51,13 @@ struct Combo {
 
 std::vector<Combo> combos;
 
+void GetTerminalSize(int* width, int* height) {
+  winsize ws;
+  PCHECK(ioctl(0, TIOCGWINSZ, &ws) == 0);
+  *width = ws.ws_col;
+  *height = ws.ws_row;
+}
+
 void PrintImageXterm256(const Graphic& graphic) {
   XtermPrinter out(&cout, Pixel::Parse(FLAGS_bg), FLAGS_bgprint);
   for (int y = 0; y < graphic.height(); ++y) {
@@ -62,26 +70,64 @@ void PrintImageXterm256(const Graphic& graphic) {
   }
 }
 
+double R(double a) {
+  // solve a = (1 - c)^2 / (2c), c
+  return a - std::sqrt(a * (a + 2)) + 1.0;
+  // return (1.0 + a - std::sqrt(std::pow(a, 2.0) + (2.0 * a)));
+}
+
+double A(double c) {
+  // This is K/S part of the the equations on that website.
+  // a = (1 - c)^2 / (2c)
+  return std::pow(1.0 - c, 2.0) / (2.0 * c);
+}
+
+void InitXterm256Hack1() {
+  for (int xterm_bg = 16; xterm_bg < 256; ++xterm_bg) {
+    combos.emplace_back(xterm_to_rgb(xterm_bg), L' ', 0, xterm_bg);
+  }
+  for (int xterm_fg = 17; xterm_fg < 232; ++xterm_fg) {
+    for (int xterm_bg = 17; xterm_bg < 232; ++xterm_bg) {
+      Pixel bg = xterm_to_rgb(xterm_bg);
+      Pixel fg = xterm_to_rgb(xterm_fg);
+      bg.set_red(R(A(fg.red()) + A(bg.red()) / 2));
+      bg.set_green(R(A(fg.green()) + A(bg.green()) / 2));
+      bg.set_blue(R(A(fg.blue()) + A(bg.blue()) / 2));
+      // bg.ToKubelkaMunk();
+      // fg.ToKubelkaMunk();
+      // bg.Mix(fg);
+      // bg.FromKubelkaMunk();
+      combos.emplace_back(bg, L'\u2591', xterm_fg, xterm_bg);
+    }
+  }
+}
+
+const Combo& QuantizeXterm256Hack1(const Pixel& color) {
+  const Combo* best = nullptr;
+  float best_dist = 1e6;
+  for (const auto& combo : combos) {
+    float dist = color.Distance(combo.color);
+    if (dist < best_dist) {
+      best = &combo;
+      best_dist = dist;
+    }
+  }
+  DCHECK(best != nullptr);
+  return *best;
+}
+
 void PrintImageXterm256Hack1(const Graphic& graphic) {
   Pixel bg = Pixel::Parse(FLAGS_bg);
   XtermPrinter out(&cout, bg, FLAGS_bgprint);
   for (int y = 0; y < graphic.height(); ++y) {
     for (int x = 0; x < graphic.width(); ++x) {
       Pixel color = graphic.Get(x, y).Copy().Opacify(bg);
-      const Combo* best = nullptr;
-      float best_dist = 1e6;
-      for (const auto& combo : combos) {
-        float dist = color.Distance(combo.color);
-        if (dist < best_dist) {
-          best = &combo;
-          best_dist = dist;
-        }
-      }
-      if (best->xterm_fg)
-        out.SetForeground256(best->xterm_fg);
-      if (best->xterm_bg)
-        out.SetBackground256(best->xterm_bg);
-      out << best->ch;
+      const Combo& combo = QuantizeXterm256Hack1(color);
+      if (combo.xterm_fg)
+        out.SetForeground256(combo.xterm_fg);
+      if (combo.xterm_bg)
+        out.SetBackground256(combo.xterm_bg);
+      out << combo.ch;
     }
     out.Reset();
     out << "\n";
@@ -117,30 +163,27 @@ void PrintImage(const Graphic& graphic) {
   }
 }
 
-void InitXterm256Hack1() {
-  for (int xterm_bg = 16; xterm_bg <= 255; ++xterm_bg) {
-    combos.emplace_back(xterm_to_rgb(xterm_bg), L' ', 0, xterm_bg);
-  }
-  for (int xterm_fg = 16; xterm_fg <= 255; ++xterm_fg) {
-    for (int xterm_bg = 16; xterm_bg <= 255; ++xterm_bg) {
-      Pixel color = xterm_to_rgb(xterm_bg);
-      color.Overlay(xterm_to_rgb(xterm_fg).Copy().set_alpha(0.5));
-      combos.emplace_back(color, L'\u2591', xterm_fg, xterm_bg);
+Graphic GenerateSpectrum(int width, int height) {
+  int grey_width = width / 10;
+  int spec_width = width - grey_width;
+  float hh = static_cast<float>(height) / 2.0;
+  Graphic res(width, height);
+  for (int y = 0; y < height; ++y) {
+    float fy = static_cast<float>(y);
+    for (int x = 0; x < spec_width; ++x) {
+      float fx = static_cast<float>(x);
+      res.Get(x, y) = Pixel(
+          fx / spec_width,
+          (y > hh) ? 1.0 : fy / (hh),
+          (y < hh) ? 1.0 : 1.0 - (fy - (hh)) / (hh)).FromHSV().ToHSV().FromHSV();
+    }
+    for (int x = 0; x < grey_width; ++x) {
+      res.Get(x + width - grey_width, y) =
+          Pixel(0.0, 0.0, 1.0 - fy / height).FromHSV();
     }
   }
+  return res;
 }
-
-// void LoadCombos(FT_Face face) {
-//   for (auto ch : DecodeUTF8(FLAGS_chars)) {
-//     for (int xterm_fg = 16; xterm_fg <= 255; ++xterm_fg) {
-//       for (int xterm_bg = 16; xterm_bg <= 255; ++xterm_bg) {
-//         Graphic letter = LoadLetter(ch, xterm_to_rgb(xterm_fg),
-//                                     xterm_to_rgb(xterm_bg));
-//         combos.emplace_back(letter.GetAverageColor(), ch, xterm_fg, xterm_bg);
-//       }
-//     }
-//   }
-// }
 
 int main(int argc, char** argv) {
   if (!isatty(1))
@@ -154,12 +197,24 @@ int main(int argc, char** argv) {
   InitFont();
   if (FLAGS_xterm256_hack1)
     InitXterm256Hack1();
+
   // XtermPrinter out(&cout, Pixel::Parse(FLAGS_bg), FLAGS_bgprint);
   // out.SetBold(true);
   // out << "hello\n";
-  PrintImage(LoadPNG("balls.png").BilinearScale(120, 50));
-  PrintImage(LoadJPEG("obama.jpg").BilinearScale(150, 100));
+  // PrintImage(LoadPNG("balls.png").BilinearScale(120, 50));
+  // PrintImage(LoadJPEG("obama.jpg").BilinearScale(100, 60));
   // PrintImage(LoadLetter(L'a', Pixel::kWhite, Pixel::kClear));
+
+  InitXterm256Hack1();
+  Graphic spectrum = GenerateSpectrum(200, 100);
+  for (int y = 0; y < spectrum.height(); ++y) {
+    for (int x = 0; x < spectrum.width(); ++x) {
+      spectrum.Get(x, y) = QuantizeXterm256Hack1(spectrum.Get(x, y)).color;
+      // spectrum.Get(x, y) = xterm_to_rgb(rgb_to_xterm256(spectrum.Get(x, y)));
+    }
+  }
+  WritePNG(spectrum, "/home/jart/www/graphic.png");
+
   return 0;
 }
 

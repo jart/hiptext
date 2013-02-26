@@ -31,12 +31,17 @@ class Pixel {
   Pixel Copy() const { return *this; }
   Pixel& Overlay(const Pixel& other);
   Pixel& Opacify(const Pixel& background);
+  Pixel& Mix(const Pixel& other);
+  Pixel& ToKubelkaMunk();
+  Pixel& FromKubelkaMunk();
+  Pixel& ToHSV();
+  Pixel& FromHSV();
+
   float Distance(const Pixel& other) const;
   std::string ToString() const;
 
   static Pixel Parse(const std::string& name);
-  static Pixel HSL(float hue, float sat, float lit, float alpha = 1.0);
-  static float HueToRGB(float m1, float m2, float h);
+  static Pixel HSL(float hue, float sat, float lum, float alpha = 1.0);
 
   bool operator==(const Pixel& other) const {
     return (red_ == other.red_ &&
@@ -46,6 +51,10 @@ class Pixel {
   }
 
  private:
+  static float CalculateReflectance(float absorbtion_ratio);
+  static float CalculateAbsorbance(float channel);
+  static float HueToRGB(float m1, float m2, float h);
+
   float red_;
   float green_;
   float blue_;

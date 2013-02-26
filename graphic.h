@@ -1,6 +1,7 @@
 #ifndef HIPTEXT_GRAPHIC_H_
 #define HIPTEXT_GRAPHIC_H_
 
+#include <algorithm>
 #include <utility>
 #include <vector>
 #include <glog/logging.h>
@@ -37,6 +38,16 @@ class Graphic {
     DCHECK(0 <= x && x < width_) << "| x=" << x << " width_=" << width_;
     DCHECK(0 <= y && y < height_) << "| y=" << y << " height_=" << height_;
     return pixels_[y * width_ + x];
+  }
+
+  inline Pixel& SafeGet(int x, int y) {
+    return pixels_[std::max(std::min(y, height_ - 1), 0) * width_ +
+                   std::max(std::min(x, width_ - 1), 0)];
+  }
+
+  inline const Pixel& SafeGet(int x, int y) const {
+    return pixels_[std::max(std::min(y, height_ - 1), 0) * width_ +
+                   std::max(std::min(x, width_ - 1), 0)];
   }
 
   Pixel GetAverageColor() const;

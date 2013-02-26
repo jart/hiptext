@@ -32,5 +32,5 @@ clean:
 	  $(wildcard *.d) \
 	  $(patsubst %.rl,%.cc,$(wildcard *.rl))
 
--include $(SRCS:.cc=.d)
+-include $(patsubst %.cc,%.d,$(wildcard *.cc))
 .PHONY : clean check
