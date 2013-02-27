@@ -8,10 +8,10 @@ const Pixel Pixel::kWhite = Pixel(1.0, 1.0, 1.0, 1.0);
 const Pixel Pixel::kGreen = Pixel(0.0, 1.0, 0.0, 1.0);
 
 Pixel& Pixel::FromHSV() {
-  float chroma = green_ * blue_;
-  float hdash = red_ * 6.0;
-  float min = blue_ - chroma;
-  float x = chroma * (1.0 - std::abs(std::fmod(hdash, 2.0f) - 1.0));
+  double chroma = green_ * blue_;
+  double hdash = red_ * 6.0;
+  double min = blue_ - chroma;
+  double x = chroma * (1.0 - std::abs(std::fmod(hdash, 2.0) - 1.0));
   if (hdash < 1.0) {
     red_ = chroma;
     green_ = x;
@@ -44,9 +44,9 @@ Pixel& Pixel::FromHSV() {
 }
 
 Pixel& Pixel::ToHSV() {
-  float min = std::min(std::min(red_, green_), blue_);
-  float max = std::max(std::max(red_, green_), blue_);
-  float chroma = max - min;
+  double min = std::min(std::min(red_, green_), blue_);
+  double max = std::max(std::max(red_, green_), blue_);
+  double chroma = max - min;
   if (chroma != 0.0) {
     if (red_ == max) {
       red_ = (green_ - blue_) / chroma;
@@ -68,15 +68,15 @@ Pixel& Pixel::ToHSV() {
 }
 
 // Hue Saturation Luminosity
-Pixel Pixel::HSL(float h, float s, float l, float a) {
-  float m2 = (l <= 0.5) ? l*(s+1) : l+s-l*s;
-  float m1 = l*2-m2;
+Pixel Pixel::HSL(double h, double s, double l, double a) {
+  double m2 = (l <= 0.5) ? l*(s+1) : l+s-l*s;
+  double m1 = l*2-m2;
   return Pixel(HueToRGB(m1, m2, h+1/3),
                HueToRGB(m1, m2, h    ),
                HueToRGB(m1, m2, h-1/3), a);
 }
 
-float Pixel::HueToRGB(float m1, float m2, float h) {
+double Pixel::HueToRGB(double m1, double m2, double h) {
   if (h<0) h += 1;
   if (h>1) h -= 1;
   if (h*6<1) return m1+(m2-m1)*h*6;
@@ -85,7 +85,7 @@ float Pixel::HueToRGB(float m1, float m2, float h) {
   return m1;
 }
 
-float Pixel::Distance(const Pixel& other) const {
+double Pixel::Distance(const Pixel& other) const {
   return std::sqrt(std::pow(red_ - other.red_, 2.0) +
                    std::pow(green_ - other.green_, 2.0) +
                    std::pow(blue_ - other.blue_, 2.0));
@@ -144,30 +144,22 @@ std::ostream& operator<<(std::ostream& os, const Pixel& pixel) {
 }
 
 // http://www.springerreference.com/docs/html/chapterdbid/212829.html
-Pixel& Pixel::ToKubelkaMunk() {
-  red_ = CalculateAbsorbance(red_);
-  green_ = CalculateAbsorbance(green_);
-  blue_ = CalculateAbsorbance(blue_);
-  return *this;
-}
-
-Pixel& Pixel::FromKubelkaMunk() {
-  red_ = CalculateReflectance(red_);
-  green_ = CalculateReflectance(green_);
-  blue_ = CalculateReflectance(blue_);
-  return *this;
-}
-
-float Pixel::CalculateReflectance(float a) {
-  // solve a = (1 - c)^2 / (2c), c
-  return a - std::sqrt(a * (a + 2)) + 1.0;
-  // return (1.0 + a - std::sqrt(std::pow(a, 2.0) + (2.0 * a)));
-}
-
-float Pixel::CalculateAbsorbance(float c) {
+static double A(double c) {
   // This is K/S part of the the equations on that website.
   // a = (1 - c)^2 / (2c)
-  return std::pow(1.0 - c, 2.0) / (2.0 * c);
+  return std::pow(1.0 - c, 2.0) / (2.0 * std::max(c, 1e-6));
+}
+
+// Inverse of A() : solve a = (1 - c)^2 / (2c), c
+static double R(double a) {
+  return a - std::sqrt(a * (a + 2)) + 1.0;
+}
+
+Pixel& Pixel::MixKubelkaMunk(const Pixel& other) {
+  red_ = R(A(red_) + A(other.red_) / 2);
+  green_ = R(A(green_) + A(other.green_) / 2);
+  blue_ = R(A(blue_) + A(other.blue_) / 2);
+  return *this;
 }
 
 // For Emacs:

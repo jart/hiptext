@@ -13,7 +13,7 @@ DEFINE_string(font, "DejaVuSansMono.ttf",
 DEFINE_int32(font_index, 0, "Index of face to use inside font .ttf file.");
 DEFINE_int32(font_size, 11, "The size of the font in points.");
 DEFINE_int32(font_dpi, 300, "Dots per inch for font rendering.");
-DEFINE_bool(hinting, true, "Enable font hinting.");
+DEFINE_bool(hinting, false, "Enable font hinting.");
 
 static FT_Library library;
 static FT_Face face;
@@ -44,13 +44,13 @@ Graphic LoadLetter(wchar_t letter, const Pixel& fg, const Pixel& bg) {
   Graphic graphic(width, height, bg);
   for (int y = 0; y < bitmap->rows; ++y) {
     int y2 = y + offset_y;
-    if (y2 < 0 || y2 >= graphic.height())
+    if (y2 < 0 || y2 >= height)
       continue;
     for (int x = 0; x < bitmap->width; ++x) {
       uint8_t grey = bitmap->buffer[y * bitmap->width + x];
       if (grey) {
         int x2 = x + offset_x;
-        if (x2 < 0 || x2 >= graphic.width())
+        if (x2 < 0 || x2 >= width)
           continue;
         graphic.Get(x2, y2).Overlay(fg.Copy().set_alpha(Color256(grey)));
       }

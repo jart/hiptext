@@ -4,22 +4,25 @@
 #include "pixel.h"
 
 // Calculate number that's percent between p1 and p2.
-static inline float Lerp(float p1, float p2, float percent) {
+static inline double Lerp(double p1, double p2, double percent) {
   return p1 * (1.0 - percent) + p2 * percent;
 }
 
 Graphic Graphic::BilinearScale(int new_width, int new_height) const {
+  if (width_ == new_width && height_ == new_height) {
+    return *this;
+  }
   Graphic res(new_width, new_height);
-  float rx = (float)width_ / (float)res.width_;
-  float ry = (float)height_ / (float)res.height_;
+  double rx = (double)width_ / (double)res.width_;
+  double ry = (double)height_ / (double)res.height_;
   for (int y = 0; y < res.height_; ++y) {
     for (int x = 0; x < res.width_; ++x) {
-      float sx = x * rx;
-      float sy = y * ry;
+      double sx = x * rx;
+      double sy = y * ry;
       int fx = (int)std::floor(sx);
       int fy = (int)std::floor(sy);
-      float px = sx - fx;
-      float py = sy - fy;
+      double px = sx - fx;
+      double py = sy - fy;
       const Pixel& tl = SafeGet(fx,     fy    );
       const Pixel& tr = SafeGet(fx + 1, fy    );
       const Pixel& bl = SafeGet(fx,     fy + 1);
@@ -86,15 +89,17 @@ Graphic& Graphic::Opacify(const Pixel& background) {
   return *this;
 }
 
-Pixel Graphic::GetAverageColor() const {
+Pixel Graphic::GetAverageColor(int x, int y, int w, int h) const {
+  CHECK(0 <= x && x + w < width_);
+  CHECK(0 <= y && y + h < height_);
   double avg_red = 0.0;
   double avg_green = 0.0;
   double avg_blue = 0.0;
-  for (int y = 0; y < height_; ++y) {
-    for (int x = 0; x < width_; ++x) {
-      avg_red += Get(x, y).red();
-      avg_green += Get(x, y).green();
-      avg_blue += Get(x, y).blue();
+  for (int dy = 0; dy < h; ++dy) {
+    for (int dx = 0; dx < w; ++dx) {
+      avg_red += Get(x + dx, y + dy).red();
+      avg_green += Get(x + dx, y + dy).green();
+      avg_blue += Get(x + dx, y + dy).blue();
     }
   }
   return Pixel(avg_red / (width_ * height_),

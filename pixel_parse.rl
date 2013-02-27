@@ -37,7 +37,7 @@ Pixel Pixel::Parse(const std::string& name) {
   const char* mark;
   const char* e;
   int val;
-  float fval = 1.0;
+  double fval = 1.0;
   std::vector<int> vals;
   %%{
     machine pixel_color;

@@ -28,9 +28,9 @@ uint8_t rgb_to_xterm(const Pixel& pix, int begin, int end) {
   DCHECK(0 <= begin && begin <= 256) << begin;
   DCHECK(0 <= end && end <= 256) << end;
   uint8_t best_match = 0;
-  float smallest_distance = 1e9;
+  double smallest_distance = 1e9;
   for (int c = begin; c < end; ++c) {
-    float dist = g_xterm[c].Distance(pix);
+    double dist = g_xterm[c].Distance(pix);
     if (dist < smallest_distance) {
       smallest_distance = dist;
       best_match = c;

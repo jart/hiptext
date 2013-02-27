@@ -121,12 +121,22 @@ void XtermPrinter::Flush() {
   }
 
   if (new_.fg != cur_.fg) {
-    PrintCode(new_.fg, &first);
+    if (new_.fg == 0) {
+      PrintSep(&first);
+      (*out_) << kForegroundOff;
+    } else {
+      PrintCode(new_.fg, &first);
+    }
     cur_.fg = new_.fg;
   }
 
   if (new_.bg != cur_.bg) {
-    PrintCode(new_.bg, &first);
+    if (new_.bg == 0) {
+      PrintSep(&first);
+      (*out_) << kBackgroundOff;
+    } else {
+      PrintCode(new_.bg, &first);
+    }
     cur_.bg = new_.bg;
   }
 
@@ -182,12 +192,13 @@ void XtermPrinter::SetFlip(bool flip) {
   }
 }
 
-void XtermPrinter::SetForeground256(const Pixel& color) {
-  SetForeground256(rgb_to_xterm256(color.Copy().Opacify(bg_)));
+bool XtermPrinter::SetForeground256(const Pixel& color) {
+  return SetForeground256(rgb_to_xterm256(color.Copy().Opacify(bg_)));
 }
 
-void XtermPrinter::SetForeground256(int code) {
-  if (!bgprint_ && new_.flip && code == bg256_) {
+bool XtermPrinter::SetForeground256(int code) {
+  bool same_as_bg = (code == bg256_);
+  if (!bgprint_ && new_.flip && same_as_bg) {
     code = 0;
   } else {
     code |= kForeground256;
@@ -196,14 +207,16 @@ void XtermPrinter::SetForeground256(int code) {
     new_.fg = code;
     dirty_ = true;
   }
+  return same_as_bg;
 }
 
-void XtermPrinter::SetBackground256(const Pixel& color) {
-  SetBackground256(rgb_to_xterm256(color.Copy().Opacify(bg_)));
+bool XtermPrinter::SetBackground256(const Pixel& color) {
+  return SetBackground256(rgb_to_xterm256(color.Copy().Opacify(bg_)));
 }
 
-void XtermPrinter::SetBackground256(int code) {
-  if (!bgprint_ && !new_.flip && code == bg256_) {
+bool XtermPrinter::SetBackground256(int code) {
+  bool same_as_bg = (code == bg256_);
+  if (!bgprint_ && !new_.flip && same_as_bg) {
     code = 0;
   } else {
     code |= kBackground256;
@@ -212,6 +225,7 @@ void XtermPrinter::SetBackground256(int code) {
     new_.bg = code;
     dirty_ = true;
   }
+  return same_as_bg;
 }
 
 void XtermPrinter::PrintSep(bool* first) const {

@@ -50,7 +50,7 @@ class Graphic {
                    std::max(std::min(x, width_ - 1), 0)];
   }
 
-  Pixel GetAverageColor() const;
+  Pixel GetAverageColor(int x, int y, int w, int h) const;
   Graphic Copy() const { return *this; }
   Graphic& Overlay(Graphic graphic, int offset_x = 0, int offset_y = 0);
   Graphic& Opacify(const Pixel& background);

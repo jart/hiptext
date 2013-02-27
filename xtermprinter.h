@@ -6,8 +6,7 @@
 
 #include "pixel.h"
 
-// A wrapper around cout that compresses xterm color escape codes. This should
-// not be used if you need ANSI cursor movement.
+// A wrapper around cout that compresses xterm color escape codes.
 class XtermPrinter {
  public:
   // 'bg' is the native background color of the terminal. If 'bgprint' is set
@@ -24,10 +23,10 @@ class XtermPrinter {
   void SetStrike(bool strike);
   void SetBlink(bool blink);
   void SetFlip(bool flip);
-  void SetForeground256(int code);
-  void SetForeground256(const Pixel& color);
-  void SetBackground256(int code);
-  void SetBackground256(const Pixel& color);
+  bool SetForeground256(int code);
+  bool SetForeground256(const Pixel& color);
+  bool SetBackground256(int code);
+  bool SetBackground256(const Pixel& color);
 
   template<typename T>
   XtermPrinter& operator<<(const T& val) {
