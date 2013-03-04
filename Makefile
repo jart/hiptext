@@ -11,7 +11,8 @@
 #  - CXXFLAGS="-g -O3 -DNDEBUG" make  # Create a faster build.
 #  - make -pn | less               # View implicit make rules and variables.
 
-CXX          = g++-4.7
+# CXX          = g++-4.7
+CXX          = clang++
 LINK.o       = $(LINK.cc)
 PREFIX      ?= /usr/local
 TARGET_ARCH ?= -march=native
@@ -29,6 +30,7 @@ SOURCES = \
 	font.o \
 	graphic.o \
 	jpeg.o \
+	macterm.o \
 	pixel.o \
 	pixel_parse.o \
 	png.o \

@@ -24,6 +24,7 @@
 #include "font.h"
 #include "graphic.h"
 #include "jpeg.h"
+#include "macterm.h"
 #include "pixel.h"
 #include "png.h"
 #include "unicode.h"
@@ -37,6 +38,7 @@ using std::wstring;
 DEFINE_string(chars, u8"\u00a0\u2591\u2592\u2593\u2588",
               "The quantization character array.");
 DEFINE_bool(color, true, "Use --nocolor to disable color altogether.");
+DEFINE_bool(macterm, false, "Optimize for Mac OS X Terminal.app.");
 DEFINE_bool(xterm256, true, "Enable xterm-256color output.");
 DEFINE_bool(xterm256_hack1, false, "Enable xterm256 color hack #1.");
 DEFINE_bool(xterm256_hack2, false, "Enable xterm256 color hack #2.");
@@ -175,6 +177,31 @@ void PrintImageXterm256Hack2(std::ostream& os, const Graphic& graphic) {
   }
 }
 
+void PrintImageMacterm(std::ostream& os, const Graphic& graphic) {
+  TermPrinter out(os);
+  Pixel bg = Pixel(FLAGS_bg);
+  int bg256 = rgb_to_xterm256(bg);
+  int height = graphic.height() - graphic.height() % 2;
+  for (int y = 0; y < height; y += 2) {
+    for (int x = 0; x < graphic.width(); ++x) {
+      MactermColor color(graphic.Get(x, y + 0),
+                         graphic.Get(x, y + 1));
+      if (!FLAGS_bgprint && (color.fg() == bg256 &&
+                             color.bg() == bg256)) {
+        out.SetForeground256(0);
+        out.SetBackground256(0);
+        out << FLAGS_space;
+      } else {
+        out.SetForeground256(color.fg());
+        out.SetBackground256(color.bg());
+        out << (color.is_upper() ? kUpperHalfBlock : kLowerHalfBlock);
+      }
+    }
+    out.Reset();
+    out << "\n";
+  }
+}
+
 void PrintImageNoColor(std::ostream& os, const Graphic& graphic) {
   Pixel bg = Pixel(FLAGS_bg);
   wstring chars = DecodeText(FLAGS_chars);
@@ -207,6 +234,10 @@ void PrintImage(std::ostream& os, const Graphic& graphic) {
               width, graphic.width(), graphic.height()) / 2));
     } else if (FLAGS_xterm256_hack2) {
       PrintImageXterm256Hack2(
+          os, graphic.BilinearScale(width, AspectHeight(
+              width, graphic.width(), graphic.height())));
+    } else if (FLAGS_macterm) {
+      PrintImageMacterm(
           os, graphic.BilinearScale(width, AspectHeight(
               width, graphic.width(), graphic.height())));
     } else {
@@ -340,8 +371,8 @@ int main(int argc, char** argv) {
   // out << L'\n';
 
   cout << "\x1b[?25l";  // Hide cursor.
-  std::stringstream ss;
   for (int frame = 1; frame <= 1000; ++frame) {
+    std::stringstream ss;
     ss << "\x1b[H\n";
     char buf[128];
     snprintf(buf, sizeof(buf), "rickroll/%08d.jpg", frame);
@@ -351,7 +382,7 @@ int main(int argc, char** argv) {
     nanosleep(&req, NULL);
   }
 
-  // for (int code = 17; code < 232; ++code) {
+  // for (int code = 40; code < 256; ++code) {
   //   std::ostringstream out;
   //   string val;
   //   Pixel pix;
@@ -386,7 +417,7 @@ int main(int argc, char** argv) {
   //       << "\n";
   //   cout << "\n";
 
-  //   std::ofstream("terminal.app.txt", std::ios_base::app) << out;
+  //   std::ofstream("terminal.app.txt", std::ios_base::app) << out.str();
   // }
 
   return 0;
