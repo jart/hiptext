@@ -54,6 +54,12 @@ DEFINE_bool(bgprint, false, "Enable explicit styling when printing characters "
 DEFINE_string(space, u8"\u00a0", "The empty character to use when printing. "
               "By default this is a utf8 non-breaking space.");
 
+DEFINE_int32(width, 0, "Width of rendering. Defaults to 0, in which case it "
+           "automatically detects the terminal width. If height is not "
+           "provided, it still maintains the aspect ratio.");
+DEFINE_int32(height, 0, "Height of rendering. Defaults to 0, in which case it "
+           "automatically maintains the aspect ratio with respect to width.");
+
 static const wchar_t kUpperHalfBlock = L'\u2580';
 static const wchar_t kLowerHalfBlock = L'\u2584';
 static const wchar_t kFullBlock = L'\u2588';
@@ -226,26 +232,27 @@ static int AspectHeight(double new_width, double width, double height) {
 void PrintImage(std::ostream& os, const Graphic& graphic) {
   int term_width = GetTerminalSize().ws_col;
   // int term_height = GetTerminalSize().ws_row;
+  // Default to aspect-ratio unless |height| gflag is provided.
   int width = std::min(graphic.width(), term_width);
+  width = FLAGS_width ? FLAGS_width : width;
+  int height = FLAGS_height ? FLAGS_height :
+      AspectHeight(width, graphic.width(), graphic.height());
+
   if (FLAGS_color) {
     if (FLAGS_xterm256_hack1) {
       PrintImageXterm256Hack1(
-          os, graphic.BilinearScale(width, AspectHeight(
-              width, graphic.width(), graphic.height()) / 2));
+          os, graphic.BilinearScale(width, height / 2));
     } else if (FLAGS_xterm256_hack2) {
       PrintImageXterm256Hack2(
-          os, graphic.BilinearScale(width, AspectHeight(
-              width, graphic.width(), graphic.height())));
+          os, graphic.BilinearScale(width, height));
     } else if (FLAGS_macterm) {
       PrintImageMacterm(
-          os, graphic.BilinearScale(width, AspectHeight(
-              width, graphic.width(), graphic.height())));
+          os, graphic.BilinearScale(width, height));
     } else {
       // PrintImageXterm256(
       //     os, graphic.BilinearScale(term_width, term_height));
       PrintImageXterm256(
-          os, graphic.BilinearScale(width, AspectHeight(
-              width, graphic.width(), graphic.height()) / 2));
+          os, graphic.BilinearScale(width, height / 2));
     }
   } else {
     PrintImageNoColor(
