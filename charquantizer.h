@@ -1,3 +1,6 @@
+// hiptext - Image to Text Converter
+// Copyright (c) 2013 Justine Tunney
+
 #ifndef HIPTEXT_CHARQUANTIZER_H_
 #define HIPTEXT_CHARQUANTIZER_H_
 
@@ -16,7 +19,8 @@ class CharQuantizer {
   }
 
   inline wchar_t Quantize(int color) const {
-    DCHECK(0 <= color && color < map_.size());
+    DCHECK_GE(color, 0);
+    DCHECK_LT(color, map_.size());
     return map_[color];
   }
 

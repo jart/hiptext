@@ -1,3 +1,6 @@
+// hiptext - Image to Text Converter
+// Copyright (c) 2013 Justine Tunney
+
 #include "xterm256.h"
 #include "pixel.h"
 #include <glog/logging.h>
@@ -6,27 +9,17 @@ static uint8_t g_cube_steps[] = { 0x00, 0x5F, 0x87, 0xAF, 0xD7, 0xFF };
 
 // These colors vary wildly based on the palette of the terminal emulator.
 static Pixel g_basic16[] = {
-  RGB256(  0,   0,   0), RGB256(205,   0,   0), RGB256(  0, 205,   0),
-  RGB256(205, 205,   0), RGB256(  0,   0, 238), RGB256(205,   0, 205),
-  RGB256(  0, 205, 205), RGB256(229, 229, 229), RGB256(127, 127, 127),
-  RGB256(255,   0,   0), RGB256(  0, 255,   0), RGB256(255, 255,   0),
-  RGB256( 92,  92, 255), RGB256(255,   0, 255), RGB256(  0, 255, 255),
-  RGB256(255, 255, 255)
+  {   0,   0,   0 }, { 205,   0,   0 }, {  0, 205,   0 }, { 205, 205,   0 },
+  {   0,   0, 238 }, { 205,   0, 205 }, {  0, 205, 205 }, { 229, 229, 229 },
+  { 127, 127, 127 }, { 255,   0,   0 }, {  0, 255,   0 }, { 255, 255,   0 },
+  {  92,  92, 255 }, { 255,   0, 255 }, {  0, 255, 255 }, { 255, 255, 255 },
 };
 
-constexpr Pixel CalculateXtermToRGB(uint8_t xcolor) {
-  return ((xcolor < 16)
-          ? g_basic16[xcolor]
-          : ((xcolor < 232)
-             ? RGB256(g_cube_steps[((xcolor - 16) / 36) % 6],
-                      g_cube_steps[((xcolor - 16) / 6) % 6],
-                      g_cube_steps[(xcolor - 16) % 6])
-             : Grey256(8 + (xcolor - 232) * 0x0A)));
-}
-
 uint8_t rgb_to_xterm(const Pixel& pix, int begin, int end) {
-  DCHECK(0 <= begin && begin <= 256) << begin;
-  DCHECK(0 <= end && end <= 256) << end;
+  DCHECK_GE(begin, 0);
+  DCHECK_LE(begin, 256);
+  DCHECK_GE(end, 0);
+  DCHECK_LE(end, 256);
   uint8_t best_match = 0;
   double smallest_distance = 1e9;
   for (int c = begin; c < end; ++c) {
@@ -48,7 +41,8 @@ uint8_t rgb_to_xterm256(const Pixel& pix) {
 }
 
 const Pixel& xterm_to_rgb(int code) {
-  DCHECK(0 <= code && code < 256) << code;
+  DCHECK_GE(code, 0);
+  DCHECK_LT(code, 256);
   return g_xterm[code];
 }
 
@@ -59,6 +53,18 @@ void PrintXterm256() {
     printf("%d = (%0.2f, %0.2f, %0.2f)", n, pix.red(), pix.green(), pix.blue());
     printf("\x1b[0m\n");
   }
+}
+
+static constexpr Pixel CalculateXtermToRGB(uint8_t xcolor) {
+  return ((xcolor < 16)
+          ? g_basic16[xcolor]
+          : ((xcolor < 232)
+             ? Pixel(g_cube_steps[((xcolor - 16) / 36) % 6],
+                     g_cube_steps[((xcolor - 16) / 6) % 6],
+                     g_cube_steps[(xcolor - 16) % 6])
+             : Pixel(8 + (xcolor - 232) * 0x0A,
+                     8 + (xcolor - 232) * 0x0A,
+                     8 + (xcolor - 232) * 0x0A)));
 }
 
 Pixel g_xterm[256] = {

@@ -1,10 +1,16 @@
+// hiptext - Image to Text Converter
+// Copyright (c) 2013 Justine Tunney
+
 #include <cstdio>
 #include <unistd.h>
 #include <sys/ioctl.h>
 #include <algorithm>
+#include <fstream>
 #include <iostream>
+#include <iterator>
 #include <locale>
 #include <memory>
+#include <numeric>
 #include <sstream>
 #include <string>
 #include <unordered_map>
@@ -20,9 +26,9 @@
 #include "jpeg.h"
 #include "pixel.h"
 #include "png.h"
-#include "utf8.h"
+#include "unicode.h"
 #include "xterm256.h"
-#include "xtermprinter.h"
+#include "termprinter.h"
 
 using std::cout;
 using std::string;
@@ -46,7 +52,9 @@ DEFINE_bool(bgprint, false, "Enable explicit styling when printing characters "
 DEFINE_string(space, u8"\u00a0", "The empty character to use when printing. "
               "By default this is a utf8 non-breaking space.");
 
-const wchar_t kUpperHalfBlock = L'\u2580';
+static const wchar_t kUpperHalfBlock = L'\u2580';
+static const wchar_t kLowerHalfBlock = L'\u2584';
+static const wchar_t kFullBlock = L'\u2588';
 
 struct Combo {
   Combo(Pixel color, wchar_t ch, uint8_t xterm_fg, uint8_t xterm_bg)
@@ -64,7 +72,7 @@ struct Combo {
 std::vector<Combo> g_combos;
 
 void InitXterm256Hack1() {
-  for (int xterm_bg = 16; xterm_bg < 256; ++xterm_bg) {
+  for (int xterm_bg = 17; xterm_bg < 256; ++xterm_bg) {
     g_combos.emplace_back(xterm_to_rgb(xterm_bg), L' ', 0, xterm_bg);
   }
   for (int xterm_fg = 17; xterm_fg < 232; ++xterm_fg) {
@@ -87,7 +95,7 @@ const Combo& QuantizeXterm256Hack1(const Pixel& color) {
       best_dist = dist;
     }
   }
-  DCHECK(best != nullptr);
+  CHECK_NOTNULL(best);
   return *best;
 }
 
@@ -98,34 +106,42 @@ winsize GetTerminalSize() {
 }
 
 void PrintImageXterm256(std::ostream& os, const Graphic& graphic) {
-  XtermPrinter out(&os, Pixel::Parse(FLAGS_bg), FLAGS_bgprint);
-  bool first = true;
+  TermPrinter out(os);
+  Pixel bg = Pixel(FLAGS_bg);
+  int bg256 = rgb_to_xterm256(bg);
   for (int y = 0; y < graphic.height(); ++y) {
-    if (first) {
-      first = false;
-    } else {
-      out << "\n";
-    }
     for (int x = 0; x < graphic.width(); ++x) {
-      out.SetBackground256(graphic.Get(x, y));
+      int code = rgb_to_xterm256(graphic.Get(x, y).Copy().Opacify(bg));
+      if (!FLAGS_bgprint && code == bg256) {
+        out.SetBackground256(0);
+      } else {
+        out.SetBackground256(code);
+      }
       out << FLAGS_space;
     }
     out.Reset();
+    out << "\n";
   }
 }
 
 void PrintImageXterm256Hack1(std::ostream& os, const Graphic& graphic) {
-  Pixel bg = Pixel::Parse(FLAGS_bg);
-  XtermPrinter out(&os, bg, FLAGS_bgprint);
+  TermPrinter out(os);
+  Pixel bg = Pixel(FLAGS_bg);
+  int bg256 = rgb_to_xterm256(bg);
   for (int y = 0; y < graphic.height(); ++y) {
     for (int x = 0; x < graphic.width(); ++x) {
-      Pixel color = graphic.Get(x, y).Copy().Opacify(bg);
+      const Pixel& color = graphic.Get(x, y).Copy().Opacify(bg);
       const Combo& combo = QuantizeXterm256Hack1(color);
       if (combo.xterm_fg)
         out.SetForeground256(combo.xterm_fg);
       if (combo.xterm_bg)
         out.SetBackground256(combo.xterm_bg);
-      out << combo.ch;
+      if (!FLAGS_bgprint && (combo.xterm_fg == bg256 &&
+                             combo.xterm_bg == bg256)) {
+        out << FLAGS_space;
+      } else {
+        out << combo.ch;
+      }
     }
     out.Reset();
     out << "\n";
@@ -133,17 +149,24 @@ void PrintImageXterm256Hack1(std::ostream& os, const Graphic& graphic) {
 }
 
 void PrintImageXterm256Hack2(std::ostream& os, const Graphic& graphic) {
-  Pixel bg = Pixel::Parse(FLAGS_bg);
-  XtermPrinter out(&os, bg, FLAGS_bgprint);
+  TermPrinter out(os);
+  Pixel bg = Pixel(FLAGS_bg);
+  int bg256 = rgb_to_xterm256(bg);
   int height = graphic.height() - graphic.height() % 2;
   for (int y = 0; y < height; y += 2) {
     for (int x = 0; x < graphic.width(); ++x) {
-      bool same_as_bg = true;
-      same_as_bg &= out.SetForeground256(graphic.Get(x, y));
-      same_as_bg &= out.SetBackground256(graphic.Get(x, y + 1));
-      if (same_as_bg) {
+      const Pixel& top = graphic.Get(x, y);
+      const Pixel& bottom = graphic.Get(x, y + 1);
+      int top256 = rgb_to_xterm256(top);
+      int bottom256 = rgb_to_xterm256(bottom);
+      if (!FLAGS_bgprint && (top256 == bg256 &&
+                             bottom256 == bg256)) {
+        out.SetForeground256(0);
+        out.SetBackground256(0);
         out << FLAGS_space;
       } else {
+        out.SetForeground256(top256);
+        out.SetBackground256(bottom256);
         out << kUpperHalfBlock;
       }
     }
@@ -153,16 +176,16 @@ void PrintImageXterm256Hack2(std::ostream& os, const Graphic& graphic) {
 }
 
 void PrintImageNoColor(std::ostream& os, const Graphic& graphic) {
-  Pixel bg = Pixel::Parse(FLAGS_bg);
-  wstring chars = DecodeUTF8(FLAGS_chars);
+  Pixel bg = Pixel(FLAGS_bg);
+  wstring chars = DecodeText(FLAGS_chars);
   CharQuantizer quantizer(chars, 256);
   for (int y = 0; y < graphic.height(); ++y) {
     for (int x = 0; x < graphic.width(); ++x) {
-      Pixel pixel = graphic.Get(x, y);
+      const Pixel& pixel = graphic.Get(x, y);
       if (bg == Pixel::kWhite) {
-        os << quantizer.Quantize(255 - ColorTo256(pixel.grey()));
+        os << quantizer.Quantize(255 - static_cast<int>(pixel.grey() * 255));
       } else {
-        os << quantizer.Quantize(ColorTo256(pixel.grey()));
+        os << quantizer.Quantize(static_cast<int>(pixel.grey() * 255));
       }
     }
     cout << "\n";
@@ -175,7 +198,7 @@ static int AspectHeight(double new_width, double width, double height) {
 
 void PrintImage(std::ostream& os, const Graphic& graphic) {
   int term_width = GetTerminalSize().ws_col;
-  int term_height = GetTerminalSize().ws_row;
+  // int term_height = GetTerminalSize().ws_row;
   int width = std::min(graphic.width(), term_width);
   if (FLAGS_color) {
     if (FLAGS_xterm256_hack1) {
@@ -187,11 +210,11 @@ void PrintImage(std::ostream& os, const Graphic& graphic) {
           os, graphic.BilinearScale(width, AspectHeight(
               width, graphic.width(), graphic.height())));
     } else {
-      PrintImageXterm256(
-          os, graphic.BilinearScale(term_width, term_height));
       // PrintImageXterm256(
-      //     os, graphic.BilinearScale(width, AspectHeight(
-      //         width, graphic.width(), graphic.height()) / 2));
+      //     os, graphic.BilinearScale(term_width, term_height));
+      PrintImageXterm256(
+          os, graphic.BilinearScale(width, AspectHeight(
+              width, graphic.width(), graphic.height()) / 2));
     }
   } else {
     PrintImageNoColor(
@@ -201,7 +224,7 @@ void PrintImage(std::ostream& os, const Graphic& graphic) {
 }
 
 Graphic GenerateSpectrum(int width, int height) {
-  int bar_width = (double)width * 0.05;
+  int bar_width = static_cast<double>(width) * 0.05;
   int spec_width = width - bar_width * 4;
   double hh = static_cast<double>(height) / 2.0;
   Graphic res(width, height);
@@ -224,19 +247,19 @@ Graphic GenerateSpectrum(int width, int height) {
           Pixel(0.0, 0.0, fy / height).FromHSV();
     }
 
-    // Render the red bar.
+    // Render the red/white gradient bar.
     offset += bar_width;
     for (int x = 0; x < bar_width; ++x) {
       res.Get(x + offset, y) = Pixel(1.0, fy / height, fy / height);
     }
 
-    // Render the green bar.
+    // Render the green/white gradient bar.
     offset += bar_width;
     for (int x = 0; x < bar_width; ++x) {
       res.Get(x + offset, y) = Pixel(fy / height, 1.0, fy / height);
     }
 
-    // Render the blue bar.
+    // Render the blue/white gradient bar.
     offset += bar_width;
     for (int x = 0; x < bar_width; ++x) {
       res.Get(x + offset, y) = Pixel(fy / height, fy / height, 1.0);
@@ -253,7 +276,9 @@ int main(int argc, char** argv) {
   google::ParseCommandLineFlags(&argc, &argv, true);
   google::InitGoogleLogging(argv[0]);
   google::InstallFailureSignalHandler();
-  std::locale::global(std::locale("en_US.utf8"));
+  const char* lang = std::getenv("LANG");
+  if (lang == nullptr) lang = "en_US.utf8";
+  std::locale::global(std::locale(lang));
   InitFont();
   if (FLAGS_xterm256_hack1)
     InitXterm256Hack1();
@@ -288,11 +313,11 @@ int main(int argc, char** argv) {
   // }
   // WritePNG(lol, "/home/jart/www/graphic.png");
 
-  // XtermPrinter out(&cout, Pixel::Parse(FLAGS_bg), FLAGS_bgprint);
+  // TermPrinter out(cout, Pixel::Parse(FLAGS_bg), FLAGS_bgprint);
   // out.SetBold(true);
   // out << "hello\n";
-  // PrintImage(cout, LoadPNG("balls.png"));
-  // PrintImage(cout, LoadJPEG("obama.jpg"));
+  PrintImage(cout, LoadPNG("balls.png"));
+  PrintImage(cout, LoadJPEG("obama.jpg"));
   // PrintImage(cout, LoadLetter(L'@', Pixel::kWhite, Pixel::kClear));
 
   // InitXterm256Hack1();
@@ -300,12 +325,12 @@ int main(int argc, char** argv) {
   // for (int y = 0; y < spectrum.height(); ++y) {
   //   for (int x = 0; x < spectrum.width(); ++x) {
   //     spectrum.Get(x, y) = QuantizeXterm256Hack1(spectrum.Get(x, y)).color;
-  //     // spectrum.Get(x, y) = xterm_to_rgb(rgb_to_xterm256(spectrum.Get(x, y)));
+  //     spectrum.Get(x, y) = xterm_to_rgb(rgb_to_xterm256(spectrum.Get(x, y)));
   //   }
   // }
   // WritePNG(spectrum, "/home/jart/www/graphic.png");
 
-  // XtermPrinter out(&cout, Pixel::kBlack, false);
+  // TermPrinter out(cout, Pixel::kBlack, false);
   // out.SetBackground256(Pixel::kGreen);
   // out.SetForeground256(Pixel::kGreen);
   // out << L'\u2580';
@@ -314,17 +339,55 @@ int main(int argc, char** argv) {
   // out << L'\u2580';
   // out << L'\n';
 
-  cout << "\x1b[?25l";  // Hide cursor.
-  for (int frame = 1; frame <= 1000; ++frame) {
-    std::stringstream ss;
-    ss << "\n";
-    char buf[128];
-    snprintf(buf, sizeof(buf), "rickroll/%08d.jpg", frame);
-    PrintImage(ss, LoadJPEG(buf));
-    cout << ss.str();
-    timespec req = {0, 50000000};
-    nanosleep(&req, NULL);
-  }
+  // cout << "\x1b[?25l";  // Hide cursor.
+  // for (int frame = 1; frame <= 1000; ++frame) {
+  //   std::stringstream ss;
+  //   ss << "\n";
+  //   char buf[128];
+  //   snprintf(buf, sizeof(buf), "rickroll/%08d.jpg", frame);
+  //   PrintImage(ss, LoadJPEG(buf));
+  //   cout << ss.str();
+  //   timespec req = {0, 50000000};
+  //   nanosleep(&req, NULL);
+  // }
+
+  // for (int code = 17; code < 232; ++code) {
+  //   std::ostringstream out;
+  //   string val;
+  //   Pixel pix;
+
+  //   for (int n = 0; n < 10; ++n) {
+  //     cout << "\x1b[38;5;" << code << "m"
+  //          << wstring(80, kFullBlock)
+  //          << "\x1b[0m\n";
+  //   }
+  //   cout << "What dost thou see? ";
+  //   do { std::cin >> val; } while (val == "");
+  //   pix = Pixel(val);
+  //   out << "[0][" << code << "] = {"
+  //       << static_cast<int>(pix.red() * 255) << ", "
+  //       << static_cast<int>(pix.green() * 255) << ", "
+  //       << static_cast<int>(pix.blue() * 255) << "},"
+  //       << "\n";
+  //   cout << "\n";
+
+  //   for (int n = 0; n < 10; ++n) {
+  //     cout << "\x1b[48;5;" << code << "m"
+  //          << string(80, L' ')
+  //          << "\x1b[0m\n";
+  //   }
+  //   cout << "What dost thou see? ";
+  //   do { std::cin >> val; } while (val == "");
+  //   pix = Pixel(val);
+  //   out << "[1][" << code << "] = {"
+  //       << static_cast<int>(pix.red() * 255) << ", "
+  //       << static_cast<int>(pix.green() * 255) << ", "
+  //       << static_cast<int>(pix.blue() * 255) << "},"
+  //       << "\n";
+  //   cout << "\n";
+
+  //   std::ofstream("terminal.app.txt", std::ios_base::app) << out;
+  // }
 
   return 0;
 }

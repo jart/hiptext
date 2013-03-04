@@ -1,6 +1,10 @@
+// hiptext - Image to Text Converter
+// Copyright (c) 2013 Justine Tunney
+
 #include "graphic.h"
 #include <cmath>
 #include <iostream>
+#include <glog/logging.h>
 #include "pixel.h"
 
 // Calculate number that's percent between p1 and p2.
@@ -13,19 +17,19 @@ Graphic Graphic::BilinearScale(int new_width, int new_height) const {
     return *this;
   }
   Graphic res(new_width, new_height);
-  double rx = (double)width_ / (double)res.width_;
-  double ry = (double)height_ / (double)res.height_;
+  double rx = static_cast<double>(width_) / res.width_;
+  double ry = static_cast<double>(height_) / res.height_;
   for (int y = 0; y < res.height_; ++y) {
     for (int x = 0; x < res.width_; ++x) {
       double sx = x * rx;
       double sy = y * ry;
-      int fx = (int)std::floor(sx);
-      int fy = (int)std::floor(sy);
+      int fx = std::floor(sx);
+      int fy = std::floor(sy);
       double px = sx - fx;
       double py = sy - fy;
-      const Pixel& tl = SafeGet(fx,     fy    );
-      const Pixel& tr = SafeGet(fx + 1, fy    );
-      const Pixel& bl = SafeGet(fx,     fy + 1);
+      const Pixel& tl = SafeGet(fx, fy);
+      const Pixel& tr = SafeGet(fx + 1, fy);
+      const Pixel& bl = SafeGet(fx, fy + 1);
       const Pixel& br = SafeGet(fx + 1, fy + 1);
       res.Get(x, y) = Pixel(
           Lerp(Lerp(tl.red(), tr.red(), px),
@@ -40,32 +44,6 @@ Graphic Graphic::BilinearScale(int new_width, int new_height) const {
   }
   return res;
 }
-
-// Graphic Graphic::BilinearScale(int new_width, int new_height) const {
-//   Graphic res(new_width, new_height);
-//   double rx = (double)width_ / (double)res.width_;
-//   double ry = (double)height_ / (double)res.height_;
-//   for (int y = 0; y < res.height_; ++y) {
-//     for (int x = 0; x < res.width_; ++x) {
-//       double sx = x * rx;
-//       double sy = y * ry;
-//       int xl = std::min((int)std::floor(sx), width_ - 1);
-//       int xr = std::min((int)std::floor(sx + 1), width_ - 1);
-//       int yt = std::min((int)std::floor(sy), height_ - 1);
-//       int yb = std::min((int)std::floor(sy + 1), height_ - 1);
-//       const Pixel& tl = Get(xl, yt);
-//       const Pixel& tr = Get(xr, yt);
-//       const Pixel& bl = Get(xl, yb);
-//       const Pixel& br = Get(xr, yb);
-//       res.Get(x, y) = Pixel(
-//           (tl.red() + tr.red() + bl.red() + br.red()) / 4,
-//           (tl.green() + tr.green() + bl.green() + br.green()) / 4,
-//           (tl.blue() + tr.blue() + bl.blue() + br.blue()) / 4,
-//           (tl.alpha() + tr.alpha() + bl.alpha() + br.alpha()) / 4);
-//     }
-//   }
-//   return res;
-// }
 
 Graphic& Graphic::Overlay(Graphic graphic, int offset_x, int offset_y) {
   for (int y1 = offset_y, y2 = 0;

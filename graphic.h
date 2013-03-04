@@ -1,3 +1,6 @@
+// hiptext - Image to Text Converter
+// Copyright (c) 2013 Justine Tunney
+
 #ifndef HIPTEXT_GRAPHIC_H_
 #define HIPTEXT_GRAPHIC_H_
 
@@ -29,14 +32,18 @@ class Graphic {
   inline int height() const { return height_; }
 
   inline Pixel& Get(int x, int y) {
-    DCHECK(0 <= x && x < width_) << "| x=" << x << " width_=" << width_;
-    DCHECK(0 <= y && y < height_) << "| y=" << y << " height_=" << height_;
+    DCHECK_GE(x, 0);
+    DCHECK_LT(x, width_);
+    DCHECK_GE(y, 0);
+    DCHECK_LT(y, height_);
     return pixels_[y * width_ + x];
   }
 
   inline const Pixel& Get(int x, int y) const {
-    DCHECK(0 <= x && x < width_) << "| x=" << x << " width_=" << width_;
-    DCHECK(0 <= y && y < height_) << "| y=" << y << " height_=" << height_;
+    DCHECK_GE(x, 0);
+    DCHECK_LT(x, width_);
+    DCHECK_GE(y, 0);
+    DCHECK_LT(y, height_);
     return pixels_[y * width_ + x];
   }
 

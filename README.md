@@ -4,6 +4,8 @@
 
 Dependencies:
 
+You need g++ >=4.7. You also need:
+
     sudo apt-get install build-essential libpng12-dev libjpeg-dev \
         libfreetype6-dev libgif-dev ragel
     sudo ./install-glog.sh

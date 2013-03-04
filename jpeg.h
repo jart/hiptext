@@ -1,3 +1,6 @@
+// hiptext - Image to Text Converter
+// Copyright (c) 2013 Justine Tunney
+
 #ifndef HIPTEXT_JPEG_H_
 #define HIPTEXT_JPEG_H_
 

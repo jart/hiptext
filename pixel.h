@@ -1,22 +1,32 @@
+// hiptext - Image to Text Converter
+// Copyright (c) 2013 Justine Tunney
+
 #ifndef HIPTEXT_PIXEL_H_
 #define HIPTEXT_PIXEL_H_
 
-#include <cstdint>
-#include <functional>
 #include <string>
 #include <ostream>
-#include <type_traits>
 
 class Pixel {
  public:
   static const Pixel kClear;
   static const Pixel kBlack;
   static const Pixel kWhite;
-  static const Pixel kGreen;
 
-  constexpr Pixel() : red_(0.0), green_(0.0), blue_(0.0), alpha_(0.0) {}
+  Pixel() = default;
+  explicit Pixel(const std::string& name);
+
   constexpr Pixel(double red, double green, double blue, double alpha = 1.0)
-      : red_(red), green_(green), blue_(blue), alpha_(alpha) {}
+      : red_(red),
+        green_(green),
+        blue_(blue),
+        alpha_(alpha) {}
+
+  constexpr Pixel(int red, int green, int blue, int alpha = 255)
+      : red_(static_cast<double>(red) / 255.0),
+        green_(static_cast<double>(green) / 255.0),
+        blue_(static_cast<double>(blue) / 255.0),
+        alpha_(static_cast<double>(alpha) / 255.0) {}
 
   inline double red() const { return red_; }
   inline double green() const { return green_; }
@@ -36,12 +46,10 @@ class Pixel {
   Pixel& MixKubelkaMunk(const Pixel& other);
   Pixel& ToHSV();
   Pixel& FromHSV();
+  Pixel& FromHSL();
 
   double Distance(const Pixel& other) const;
   std::string ToString() const;
-
-  static Pixel Parse(const std::string& name);
-  static Pixel HSL(double hue, double sat, double lum, double alpha = 1.0);
 
   bool operator==(const Pixel& other) const {
     return (red_ == other.red_ &&
@@ -50,34 +58,30 @@ class Pixel {
             alpha_ == other.alpha_);
   }
 
- private:
-  static double HueToRGB(double m1, double m2, double h);
+  static inline Pixel HSV(double h, double s, double v, double a = 1.0) {
+    return Pixel(h, s, v, a).FromHSV();
+  }
 
+  static inline Pixel HSV(int h, int s, int v, int a = 255) {
+    return Pixel(h, s, v, a).FromHSV();
+  }
+
+  static inline Pixel HSL(double h, double s, double l, double a = 1.0) {
+    return Pixel(h, s, l, a).FromHSL();
+  }
+
+  static inline Pixel HSL(int h, int s, int l, int a = 255) {
+    return Pixel(h, s, l, a).FromHSL();
+  }
+
+ private:
   double red_;
   double green_;
   double blue_;
   double alpha_;
-};
+} __attribute__ ((packed, aligned(16)));
 
 std::ostream& operator<<(std::ostream& os, const Pixel& pixel);
-
-template<typename T>
-constexpr inline double Color256(T color) {
-  static_assert(std::is_integral<T>::value, "color must be integer");
-  return (double)color / 255.0;
-}
-
-constexpr inline uint8_t ColorTo256(double color) {
-  return (uint8_t)(color * 255.0);
-}
-
-constexpr inline Pixel RGB256(int r, int g, int b) {
-  return Pixel(Color256(r), Color256(g), Color256(b), 1.0);
-}
-
-constexpr inline Pixel Grey256(int g) {
-  return Pixel(Color256(g), Color256(g), Color256(g), 1.0);
-}
 
 #endif  // HIPTEXT_PIXEL_H_
 

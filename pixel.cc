@@ -1,11 +1,14 @@
+// hiptext - Image to Text Converter
+// Copyright (c) 2013 Justine Tunney
+
 #include "pixel.h"
+#include <algorithm>
 #include <cmath>
 #include <glog/logging.h>
 
-const Pixel Pixel::kClear = Pixel(0.0, 0.0, 0.0, 0.0);
-const Pixel Pixel::kBlack = Pixel(0.0, 0.0, 0.0, 1.0);
-const Pixel Pixel::kWhite = Pixel(1.0, 1.0, 1.0, 1.0);
-const Pixel Pixel::kGreen = Pixel(0.0, 1.0, 0.0, 1.0);
+const Pixel Pixel::kClear = {   0,   0,   0,   0 };
+const Pixel Pixel::kBlack = {   0,   0,   0, 255 };
+const Pixel Pixel::kWhite = { 255, 255, 255, 255 };
 
 Pixel& Pixel::FromHSV() {
   double chroma = green_ * blue_;
@@ -67,22 +70,25 @@ Pixel& Pixel::ToHSV() {
   return *this;
 }
 
-// Hue Saturation Luminosity
-Pixel Pixel::HSL(double h, double s, double l, double a) {
-  double m2 = (l <= 0.5) ? l*(s+1) : l+s-l*s;
-  double m1 = l*2-m2;
-  return Pixel(HueToRGB(m1, m2, h+1/3),
-               HueToRGB(m1, m2, h    ),
-               HueToRGB(m1, m2, h-1/3), a);
+static double HueToRGB(double m1, double m2, double h) {
+  if (h < 0) h += 1;
+  if (h > 1) h -= 1;
+  if (h*6 < 1) return m1+(m2-m1)*h*6;
+  if (h*2 < 1) return m2;
+  if (h*3 < 2) return m1+(m2-m1)*(2/3-h)*6;
+  return m1;
 }
 
-double Pixel::HueToRGB(double m1, double m2, double h) {
-  if (h<0) h += 1;
-  if (h>1) h -= 1;
-  if (h*6<1) return m1+(m2-m1)*h*6;
-  if (h*2<1) return m2;
-  if (h*3<2) return m1+(m2-m1)*(2/3-h)*6;
-  return m1;
+// Hue Saturation Luminosity
+Pixel& Pixel::FromHSL() {
+  double m2 = ((blue_ <= 0.5)
+               ? blue_ * (green_ + 1)
+               : blue_ + green_ - blue_ * green_);
+  double m1 = blue_ * 2 - m2;
+  blue_ = HueToRGB(m1, m2, red_ - 1/3);
+  green_ = HueToRGB(m1, m2, red_);
+  red_ = HueToRGB(m1, m2, red_ + 1/3);
+  return *this;
 }
 
 double Pixel::Distance(const Pixel& other) const {
@@ -106,7 +112,9 @@ Pixel& Pixel::Overlay(const Pixel& other) {
   return *this;
 }
 
+// Layer this color on top of an opaque background, thus making it opaque.
 Pixel& Pixel::Opacify(const Pixel& background) {
+  DCHECK_EQ(1.0, background.alpha_);
   if (alpha_ == 1.0) {
     // Do nothing.
   } else if (alpha_ == 0.0) {
@@ -120,27 +128,13 @@ Pixel& Pixel::Opacify(const Pixel& background) {
   return *this;
 }
 
+// Naive RGB color mixing algorithm.
 Pixel& Pixel::Mix(const Pixel& other) {
   red_ = (red_ + other.red_) / 2.0;
   green_ = (green_ + other.green_) / 2.0;
   blue_ = (blue_ + other.blue_) / 2.0;
   alpha_ = (alpha_ + other.alpha_) / 2.0;
   return *this;
-}
-
-std::string Pixel::ToString() const {
-  std::string res(9, '#');
-  snprintf(&res.front(), 10, "#%02x%02x%02x%02x",
-           ColorTo256(red_),
-           ColorTo256(green_),
-           ColorTo256(blue_),
-           ColorTo256(alpha_));
-  return res;
-}
-
-std::ostream& operator<<(std::ostream& os, const Pixel& pixel) {
-  os << pixel.ToString();
-  return os;
 }
 
 // http://www.springerreference.com/docs/html/chapterdbid/212829.html
@@ -155,11 +149,29 @@ static double R(double a) {
   return a - std::sqrt(a * (a + 2)) + 1.0;
 }
 
+// Expensive opaque color mixing that's better for human eyes.
 Pixel& Pixel::MixKubelkaMunk(const Pixel& other) {
+  DCHECK_EQ(1.0, alpha_);
+  DCHECK_EQ(1.0, other.alpha_);
   red_ = R(A(red_) + A(other.red_) / 2);
   green_ = R(A(green_) + A(other.green_) / 2);
   blue_ = R(A(blue_) + A(other.blue_) / 2);
   return *this;
+}
+
+std::string Pixel::ToString() const {
+  std::string res(9, '#');
+  snprintf(&res.front(), res.size() + 1, "#%02x%02x%02x%02x",
+           static_cast<int>(red_ * 255),
+           static_cast<int>(green_ * 255),
+           static_cast<int>(blue_ * 255),
+           static_cast<int>(alpha_ * 255));
+  return res;
+}
+
+std::ostream& operator<<(std::ostream& os, const Pixel& pixel) {
+  os << pixel.ToString();
+  return os;
 }
 
 // For Emacs:

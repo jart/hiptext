@@ -1,19 +1,20 @@
-// utf8.cc - Tools for dealing with unicode in C++
+// hiptext - Image to Text Converter
+// Copyright (c) 2013 Justine Tunney
 
-#include "utf8.h"
+#include "unicode.h"
 #include <cstdlib>
 #include <locale>
 #include <glog/logging.h>
 
-std::wstring DecodeUTF8(const std::string& str) {
+std::wstring DecodeText(const std::string& str) {
   std::wstring res(str.size() + 1, L'\0');
   size_t count = std::mbstowcs(&res.front(), &str.front(), res.size());
-  CHECK(count != (size_t)-1) << "Invalid UTF8: " << str;
+  CHECK(count != (size_t)-1) << "Invalid text: " << str;
   res.resize(count);
   return res;
 }
 
-std::string EncodeUTF8(const std::wstring& wstr) {
+std::string EncodeText(const std::wstring& wstr) {
   std::string res(wstr.size() * 4, '\0');
   size_t count = std::wcstombs(&res.front(), &wstr.front(), res.size());
   CHECK(count != (size_t)-1) << "Invalid wstring";
@@ -21,21 +22,21 @@ std::string EncodeUTF8(const std::wstring& wstr) {
   return res;
 }
 
-std::string EncodeUTF8(wchar_t wch) {
+std::string EncodeText(wchar_t wch) {
   std::string res(MB_CUR_MAX + 1, '\0');
   size_t count = std::wcrtomb(&res.front(), wch, NULL);
-  CHECK(count != (size_t)-1) << "Invalid wchar_t: " << (int)wch;
+  CHECK(count != (size_t)-1) << "Invalid wchar_t: " << static_cast<int>(wch);
   res.resize(count);
   return res;
 }
 
 std::ostream& operator<<(std::ostream& os, const std::wstring& wstr) {
-  os << EncodeUTF8(wstr);
+  os << EncodeText(wstr);
   return os;
 }
 
 std::ostream& operator<<(std::ostream& os, wchar_t wch) {
-  os << EncodeUTF8(wch);
+  os << EncodeText(wch);
   return os;
 }
 

@@ -1,3 +1,6 @@
+// Copyright (c) 2013 Justine Tunney
+// hiptext - Image to Text Converter
+
 #include "charquantizer.h"
 
 // For Emacs:

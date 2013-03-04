@@ -1,36 +1,85 @@
-CXX          = clang++
-LINK.o       = $(LINK.cc)
-TARGET_ARCH ?= -march=native
-GTEST_DIR   ?= gtest-1.6.0
-CXXFLAGS    += -std=c++11 -Wall -pedantic -g -O2 -pipe -MD
-CXXFLAGS    += -I$(GTEST_DIR)/include
-CXXFLAGS    += $(shell freetype-config --cflags)
-LDFLAGS     += -lm -lpthread -lglog -lgflags -lpng -ljpeg
-LDFLAGS     += $(shell freetype-config --libs)
+# hiptext - Image to Text Converter
+# Copyright (c) 2013 Justine Tunney
 
-HIPS = font.o utf8.o png.o jpeg.o pixel.o graphic.o xterm256.o \
-	charquantizer.o pixel_parse.o xtermprinter.o
+# Example invocations:
+#  - make                          # Bring hiptext to life.
+#  - make check                    # Run unit tests.
+#  - sudo make install             # Allow hiptext to stay forever :)
+#  - sudo make uninstall           # Kick hiptext out of your house :(
+#  - make clean                    # Delete all generated files.
+#  - make lint                     # Check for C++ style errors.
+#  - CXXFLAGS="-g -O3 -DNDEBUG" make  # Create a faster build.
+#  - make -pn | less               # View implicit make rules and variables.
+
+CXX          = g++-4.7
+LINK.o       = $(LINK.cc)
+PREFIX      ?= /usr/local
+TARGET_ARCH ?= -march=native
+CXXFLAGS    ?= -g -O3
+CXXFLAGS    += -std=c++11 -Wall -Werror
+LDLIBS      += -lm -lglog -lgflags -lpng -ljpeg
+LDLIBS      += $(shell freetype-config --libs)
+
+ifeq (jart,$(USER))
+CXXFLAGS += -I/usr/include/x86_64-linux-gnu/c++/4.7
+endif
+
+SOURCES = \
+	charquantizer.o \
+	font.o \
+	graphic.o \
+	jpeg.o \
+	pixel.o \
+	pixel_parse.o \
+	png.o \
+	termprinter.o \
+	unicode.o \
+	xterm256.o
 
 all: hiptext
+hiptext: hiptext.o $(SOURCES)
 
-hiptext: hiptext.o $(HIPS)
+.PHONY: check clean install uninstall lint
 
-test: test.o gtest.o $(HIPS) $(patsubst %.cc,%.o,$(wildcard *_test.cc))
+check: test
+	./test --alsologtostderr --gtest_color=yes
 
-gtest.o: $(GTEST_DIR)/src/gtest-all.cc
-	$(COMPILE.cc) -I$(GTEST_DIR) $(OUTPUT_OPTION) $<
+clean:
+	$(RM) test hiptext $(wildcard *.o *.d *.S $(GTEST_DIR)/*.o)
+
+install: hiptext
+	install --mode=0755 hiptext $(PREFIX)/bin
+
+uninstall:
+	$(RM) $(PREFIX)/bin/hiptext
+
+lint:
+	cpplint.py $(wildcard *.cc hiptext/*.h) \
+		2>&1 | grep -v 'termprinter\.cc:.*non-const' \
+		     | grep -v 'readability/streams' \
+		     | grep -v 'build/include' \
+		     | grep -v 'build/header_guard' \
+		     | grep -v 'Found C system header after'
 
 %.cc: %.rl
 	ragel -o $@ $<
 
-check: test
-	./test --alsologtostderr --gtest_color=yes --gtest_print_time=1
+%.S: %.cc
+	clang++ $(CXXFLAGS) -g -S -o $@ $<
+#	$(COMPILE.cc) -g -S -fverbose-asm $(OUTPUT_OPTION) $<
 
-clean:
-	$(RM) hiptext test gtest.o \
-	  $(wildcard *.o) \
-	  $(wildcard *.d) \
-	  $(patsubst %.rl,%.cc,$(wildcard *.rl))
+# Flag overrides for individual targets.
+pixel_parse.o: CXXFLAGS := $(filter-out -MD,$(CXXFLAGS))
+font.%:        CXXFLAGS += $(shell freetype-config --cflags)
 
--include $(patsubst %.cc,%.d,$(wildcard *.cc))
-.PHONY : clean check
+# google-test integration magic.
+GTEST_DIR ?= gtest-1.6.0
+TESTS = $(GTEST_DIR)/src/gtest-all.o $(GTEST_DIR)/src/gtest_main.o \
+        $(patsubst %.cc,%.o,$(wildcard *_test.cc))
+$(TESTS): CXXFLAGS += -I$(GTEST_DIR)/include -I$(GTEST_DIR) -pthread
+$(filter gtest%,$(TESTS)): CXXFLAGS := $(filter-out -MD -Wall,$(CXXFLAGS))
+test: $(TESTS) $(SOURCES) ; $(LINK.cc) $^ $(LDLIBS) -lpthread -o $@
+
+# Recompile sources when headers change.
+CXXFLAGS += -MD
+-include $(wildcard *.d)

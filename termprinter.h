@@ -1,18 +1,18 @@
-#ifndef HIPCHAT_XTERMPRINTER_H_
-#define HIPCHAT_XTERMPRINTER_H_
+// hiptext - Image to Text Converter
+// Copyright (c) 2013 Justine Tunney
 
-#include <string>
+#ifndef HIPTEXT_TERMPRINTER_H_
+#define HIPTEXT_TERMPRINTER_H_
+
 #include <ostream>
 
-#include "pixel.h"
-
-// A wrapper around cout that compresses xterm color escape codes.
-class XtermPrinter {
+// A wrapper around cout that compresses term color escape codes.
+class TermPrinter {
  public:
   // 'bg' is the native background color of the terminal. If 'bgprint' is set
-  // to false then XtermPrinter will not waste its time printing 256color
+  // to false then TermPrinter will not waste its time printing 256color
   // background codes that are nearly identical to your terminal background.
-  XtermPrinter(std::ostream* out, const Pixel& bg, bool bgprint);
+  explicit TermPrinter(std::ostream& out);
 
   void Flush();
   void Reset(bool force = false);
@@ -23,15 +23,13 @@ class XtermPrinter {
   void SetStrike(bool strike);
   void SetBlink(bool blink);
   void SetFlip(bool flip);
-  bool SetForeground256(int code);
-  bool SetForeground256(const Pixel& color);
-  bool SetBackground256(int code);
-  bool SetBackground256(const Pixel& color);
+  void SetForeground256(int code);
+  void SetBackground256(int code);
 
   template<typename T>
-  XtermPrinter& operator<<(const T& val) {
+  inline TermPrinter& operator<<(const T& val) {
     Flush();
-    (*out_) << val;
+    out_ << val;
     return *this;
   }
 
@@ -55,10 +53,10 @@ class XtermPrinter {
   static const int kBackgroundOff;
   static const int kForeground256;
   static const int kBackground256;
-  static const std::string kEscapeStart;
-  static const std::string kEscapeEnd;
-  static const std::string kEscapeSep;
-  static const std::string kEscapeReset;
+  static const char* kEscapeStart;
+  static const char* kEscapeEnd;
+  static const char* kEscapeSep;
+  static const char* kEscapeReset;
 
   struct State {
     int fg;
@@ -79,13 +77,10 @@ class XtermPrinter {
   bool dirty_;
   State cur_;
   State new_;
-  Pixel bg_;
-  int bg256_;
-  bool bgprint_;
-  std::ostream* out_;
+  std::ostream& out_;
 };
 
-#endif  // HIPCHAT_XTERMPRINTER_H_
+#endif  // HIPTEXT_TERMPRINTER_H_
 
 // For Emacs:
 // Local Variables:

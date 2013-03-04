@@ -1,3 +1,6 @@
+// hiptext - Image to Text Converter
+// Copyright (c) 2013 Justine Tunney
+
 #include "font.h"
 
 #include <ft2build.h>
@@ -15,8 +18,8 @@ DEFINE_int32(font_size, 11, "The size of the font in points.");
 DEFINE_int32(font_dpi, 300, "Dots per inch for font rendering.");
 DEFINE_bool(hinting, false, "Enable font hinting.");
 
-static FT_Library library;
-static FT_Face face;
+static FT_Library g_library;
+static FT_Face g_face;
 
 static int GetFontLoadFlags() {
   return (FT_LOAD_RENDER | FT_LOAD_LINEAR_DESIGN |
@@ -24,19 +27,24 @@ static int GetFontLoadFlags() {
 }
 
 void InitFont() {
-  CHECK(FT_Init_FreeType(&library) == 0);
-  CHECK(FT_New_Face(library, FLAGS_font.c_str(), FLAGS_font_index, &face) == 0);
-  CHECK(FT_Set_Char_Size(face, FLAGS_font_size << 6, 0, FLAGS_font_dpi,0) == 0);
+  CHECK_EQ(0, FT_Init_FreeType(&g_library));
+  CHECK_EQ(0, FT_New_Face(
+      g_library, FLAGS_font.c_str(), FLAGS_font_index, &g_face));
+  CHECK_EQ(0, FT_Set_Char_Size(
+      g_face, FLAGS_font_size << 6, 0, FLAGS_font_dpi, 0));
+}
+
+static int CalculateBaseline(double advance, double descender, double height) {
+  return advance * descender / height + advance;
 }
 
 Graphic LoadLetter(wchar_t letter, const Pixel& fg, const Pixel& bg) {
-  CHECK(FT_Load_Char(face, letter, GetFontLoadFlags()) == 0);
-  FT_Bitmap* bitmap = &face->glyph->bitmap;
-  FT_Glyph_Metrics* metrics = &face->glyph->metrics;
-  CHECK(bitmap->pixel_mode == FT_PIXEL_MODE_GRAY);
-  const int baseline = (int)(
-      (double)metrics->vertAdvance + (double)metrics->vertAdvance *
-      (double)face->descender / (double)face->height);
+  CHECK_EQ(0, FT_Load_Char(g_face, letter, GetFontLoadFlags()));
+  FT_Bitmap* bitmap = &g_face->glyph->bitmap;
+  FT_Glyph_Metrics* metrics = &g_face->glyph->metrics;
+  CHECK_EQ(FT_PIXEL_MODE_GRAY, bitmap->pixel_mode);
+  const int baseline = CalculateBaseline(
+      metrics->vertAdvance, g_face->descender, g_face->height);
   const int width = metrics->horiAdvance >> 6;
   const int height = metrics->vertAdvance >> 6;
   const int offset_x = metrics->horiBearingX >> 6;
@@ -52,7 +60,8 @@ Graphic LoadLetter(wchar_t letter, const Pixel& fg, const Pixel& bg) {
         int x2 = x + offset_x;
         if (x2 < 0 || x2 >= width)
           continue;
-        graphic.Get(x2, y2).Overlay(fg.Copy().set_alpha(Color256(grey)));
+        double grey255 = grey / 255;
+        graphic.Get(x2, y2).Overlay(fg.Copy().set_alpha(grey255));
       }
     }
   }
