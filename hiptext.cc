@@ -316,8 +316,8 @@ int main(int argc, char** argv) {
   // TermPrinter out(cout, Pixel::Parse(FLAGS_bg), FLAGS_bgprint);
   // out.SetBold(true);
   // out << "hello\n";
-  PrintImage(cout, LoadPNG("balls.png"));
-  PrintImage(cout, LoadJPEG("obama.jpg"));
+  // PrintImage(cout, LoadPNG("balls.png"));
+  // PrintImage(cout, LoadJPEG("obama.jpg"));
   // PrintImage(cout, LoadLetter(L'@', Pixel::kWhite, Pixel::kClear));
 
   // InitXterm256Hack1();
@@ -339,17 +339,17 @@ int main(int argc, char** argv) {
   // out << L'\u2580';
   // out << L'\n';
 
-  // cout << "\x1b[?25l";  // Hide cursor.
-  // for (int frame = 1; frame <= 1000; ++frame) {
-  //   std::stringstream ss;
-  //   ss << "\n";
-  //   char buf[128];
-  //   snprintf(buf, sizeof(buf), "rickroll/%08d.jpg", frame);
-  //   PrintImage(ss, LoadJPEG(buf));
-  //   cout << ss.str();
-  //   timespec req = {0, 50000000};
-  //   nanosleep(&req, NULL);
-  // }
+  cout << "\x1b[?25l";  // Hide cursor.
+  std::stringstream ss;
+  for (int frame = 1; frame <= 1000; ++frame) {
+    ss << "\x1b[H\n";
+    char buf[128];
+    snprintf(buf, sizeof(buf), "rickroll/%08d.jpg", frame);
+    PrintImage(ss, LoadJPEG(buf));
+    cout << ss.str();
+    timespec req = {0, 50000000};
+    nanosleep(&req, NULL);
+  }
 
   // for (int code = 17; code < 232; ++code) {
   //   std::ostringstream out;
