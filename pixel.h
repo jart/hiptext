@@ -79,7 +79,7 @@ class Pixel {
   double green_;
   double blue_;
   double alpha_;
-} __attribute__ ((packed, aligned(16)));
+} __attribute__ ((aligned(16)));
 
 std::ostream& operator<<(std::ostream& os, const Pixel& pixel);
 

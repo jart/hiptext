@@ -1,10 +1,11 @@
 // hiptext - Image to Text Converter
 // Copyright (c) 2013 Justine Tunney
 
-#include <cstdio>
 #include <unistd.h>
 #include <sys/ioctl.h>
 #include <algorithm>
+#include <cassert>
+#include <cstdio>
 #include <fstream>
 #include <iostream>
 #include <iterator>
@@ -104,6 +105,7 @@ const Combo& QuantizeXterm256Hack1(const Pixel& color) {
     }
   }
   CHECK_NOTNULL(best);
+  assert(best != nullptr);
   return *best;
 }
 
@@ -186,22 +188,14 @@ void PrintImageXterm256Hack2(std::ostream& os, const Graphic& graphic) {
 void PrintImageMacterm(std::ostream& os, const Graphic& graphic) {
   TermPrinter out(os);
   Pixel bg = Pixel(FLAGS_bg);
-  int bg256 = rgb_to_xterm256(bg);
   int height = graphic.height() - graphic.height() % 2;
   for (int y = 0; y < height; y += 2) {
     for (int x = 0; x < graphic.width(); ++x) {
-      MactermColor color(graphic.Get(x, y + 0),
-                         graphic.Get(x, y + 1));
-      if (!FLAGS_bgprint && (color.fg() == bg256 &&
-                             color.bg() == bg256)) {
-        out.SetForeground256(0);
-        out.SetBackground256(0);
-        out << FLAGS_space;
-      } else {
-        out.SetForeground256(color.fg());
-        out.SetBackground256(color.bg());
-        out << (color.is_upper() ? kUpperHalfBlock : kLowerHalfBlock);
-      }
+      MactermColor color(graphic.Get(x, y + 0).Copy().Opacify(bg),
+                         graphic.Get(x, y + 1).Copy().Opacify(bg));
+      out.SetForeground256(color.fg());
+      out.SetBackground256(color.bg());
+      out << color.symbol();
     }
     out.Reset();
     out << "\n";
@@ -354,8 +348,8 @@ int main(int argc, char** argv) {
   // TermPrinter out(cout, Pixel::Parse(FLAGS_bg), FLAGS_bgprint);
   // out.SetBold(true);
   // out << "hello\n";
-  // PrintImage(cout, LoadPNG("balls.png"));
-  // PrintImage(cout, LoadJPEG("obama.jpg"));
+  PrintImage(cout, LoadPNG("balls.png"));
+  PrintImage(cout, LoadJPEG("obama.jpg"));
   // PrintImage(cout, LoadLetter(L'@', Pixel::kWhite, Pixel::kClear));
 
   // InitXterm256Hack1();
@@ -377,17 +371,17 @@ int main(int argc, char** argv) {
   // out << L'\u2580';
   // out << L'\n';
 
-  cout << "\x1b[?25l";  // Hide cursor.
-  for (int frame = 1; frame <= 1000; ++frame) {
-    std::stringstream ss;
-    ss << "\x1b[H\n";
-    char buf[128];
-    snprintf(buf, sizeof(buf), "rickroll/%08d.jpg", frame);
-    PrintImage(ss, LoadJPEG(buf));
-    cout << ss.str();
-    timespec req = {0, 50000000};
-    nanosleep(&req, NULL);
-  }
+  // cout << "\x1b[?25l";  // Hide cursor.
+  // for (int frame = 1; frame <= 1000; ++frame) {
+  //   std::stringstream ss;
+  //   ss << "\x1b[H\n";
+  //   char buf[128];
+  //   snprintf(buf, sizeof(buf), "rickroll/%08d.jpg", frame);
+  //   PrintImage(ss, LoadJPEG(buf));
+  //   cout << ss.str();
+  //   // timespec req = {0, 50000000};
+  //   // nanosleep(&req, NULL);
+  // }
 
   // for (int code = 40; code < 256; ++code) {
   //   std::ostringstream out;

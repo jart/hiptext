@@ -12,14 +12,19 @@ class Pixel;
 class MactermColor {
  public:
   MactermColor(const Pixel& top, const Pixel& bot);
-  inline bool is_upper() const { return is_upper_; }
-  inline uint8_t fg() const { return fg_; }
   inline uint8_t bg() const { return bg_; }
+  inline uint8_t fg() const { return fg_; }
+  inline wchar_t symbol() const { return symbol_; }
 
  private:
-  bool is_upper_;
-  uint8_t fg_;
+  static const wchar_t kUpperHalfBlock = L'\u2580';
+  static const wchar_t kLowerHalfBlock = L'\u2584';
+  static const wchar_t kFullBlock = L'\u2588';
+  static const wchar_t kSpace = L' ';
+
   uint8_t bg_;
+  uint8_t fg_;
+  wchar_t symbol_;
 };
 
 extern const Pixel macterm_colors[2][256];
