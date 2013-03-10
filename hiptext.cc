@@ -5,6 +5,8 @@
 #include <sys/ioctl.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <signal.h>
+
 #include <algorithm>
 #include <cassert>
 #include <cstdio>
@@ -256,10 +258,16 @@ void PrintImage(std::ostream& os, const Graphic& graphic) {
   }
 }
 
+inline void HideCursor() {
+  cout << "\x1b[?25l"; 
+}
+inline void ShowCursor() {
+  cout << "\x1b[?25h"; 
+}
 // Prints all the frames from a directory.
 // Assumes mplayer generated all these from a .jpg
 void PrintMovie(const string& dir, const int frames) {
-  cout << "\x1b[?25l";  // Hide cursor.
+  HideCursor();
   for (int frame = 1; frame <= frames; ++frame) {
     std::stringstream ss;
     ss << "\x1b[H\n";  // Jump cursor to beginning.
@@ -271,7 +279,7 @@ void PrintMovie(const string& dir, const int frames) {
     // timespec req = {0, 500000000};
     // nanosleep(&req, NULL);
   }
-  cout << "\x1b[?25h";  // Show cursor.
+  ShowCursor();
 }
 
 Graphic GenerateSpectrum(int width, int height) {
@@ -326,6 +334,13 @@ inline string GetExtension(const string& path) {
   return s;
 }
 
+void sig_handler(int sig) {
+  // Ensure that the terminal cursor is visible even after premature exit.
+  cout << sig;
+  ShowCursor();
+  exit(1);
+}
+
 int main(int argc, char** argv) {
   // Command Validation
   if (argc < 2) {
@@ -347,6 +362,7 @@ int main(int argc, char** argv) {
   if (FLAGS_xterm256_hack1)
     InitXterm256Hack1();
 
+  signal(SIGINT, &sig_handler);
   struct ::stat dinfo;
   ::stat(path.data(), &dinfo);
   if (S_ISDIR(dinfo.st_mode)) {
