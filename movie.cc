@@ -23,7 +23,7 @@ Movie::Movie(const std::string& path, int width) {
   // Basic information.
   CHECK(avformat_open_input(&format_, path.data(), nullptr, nullptr) == 0);
   CHECK(avformat_find_stream_info(format_, nullptr) >= 0);
-  av_dump_format(format_, 0, path.data(), false);
+  // av_dump_format(format_, 0, path.data(), false);
 
   // Validate and find first video stream.
   video_stream_ = -1;
@@ -72,6 +72,14 @@ Movie::Movie(const std::string& path, int width) {
                             width_, height_);
   CHECK(prep >= 0) << "Failed to prepare RGB buffer.";
   LOG(INFO) << "RGB dimensions: " << width  << "x" << height_;
+}
+
+Movie::~Movie() {
+  if (buffer_)    av_free(buffer_);
+  if (frame_)     av_free(frame_);
+  if (frame_rgb_) av_free(frame_rgb_);
+  if (context_)   avcodec_close(context_);
+  if (format_)    avformat_close_input(&format_);
 }
 
 Movie::Movie(Movie&& movie) {

@@ -17,9 +17,10 @@ struct SwsContext;
 class Movie {
  public:
   explicit Movie(const std::string& path) : Movie(path, 0) {}
+  ~Movie();
   Movie(const std::string& path, int width);
+  Movie(Movie&& movie);
   Movie(const Movie& movie) = delete;
-  Movie(Movie&& movie) = default;
   void operator=(const Movie& movie) = delete;
 
   Graphic Next();
