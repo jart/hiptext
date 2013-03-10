@@ -30,6 +30,7 @@
 #include "graphic.h"
 #include "jpeg.h"
 #include "macterm.h"
+#include "movie.h"
 #include "pixel.h"
 #include "png.h"
 #include "unicode.h"
@@ -259,9 +260,11 @@ void PrintImage(std::ostream& os, const Graphic& graphic) {
 inline void HideCursor() {
   cout << "\x1b[?25l"; 
 }
+
 inline void ShowCursor() {
   cout << "\x1b[?25h"; 
 }
+
 // Prints all the frames from a directory.
 // Assumes mplayer generated all these from a .jpg
 void PrintMovie(const string& dir, const int frames) {
@@ -375,6 +378,9 @@ int main(int argc, char** argv) {
     PrintImage(cout, LoadPNG(path));
   } else if (extension == "jpg" || extension == "jpeg") {    
     PrintImage(cout, LoadJPEG(path));
+  } else if (extension == "mov") {
+    Movie movie = Movie(path);
+    movie.Initialize();
   } else {
     cout << "Unknown Filetype.\n";
   }
