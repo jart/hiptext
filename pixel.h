@@ -47,6 +47,9 @@ class Pixel {
   Pixel& ToHSV();
   Pixel& FromHSV();
   Pixel& FromHSL();
+  Pixel& ToYUV();
+  Pixel& FromYUV();
+  Pixel& Clamp();
 
   double Distance(const Pixel& other) const;
   std::string ToString() const;

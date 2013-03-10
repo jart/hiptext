@@ -17,7 +17,8 @@ PREFIX      ?= /usr/local
 TARGET_ARCH ?= -march=native
 CXXFLAGS    ?= -g -O3
 CXXFLAGS    += -std=c++11 -Wall -Wextra -Werror -pedantic
-LDLIBS      += -lm -lglog -lgflags -lpng -ljpeg -lavcodec -lavformat -lavutil -lswscale
+LDLIBS      += -lm -lglog -lgflags -lpng -ljpeg
+LDLIBS      += -lavcodec -lavformat -lavutil -lswscale
 LDLIBS      += $(shell freetype-config --libs)
 
 ifeq ($(shell hostname),bean)

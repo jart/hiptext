@@ -20,18 +20,14 @@ You need clang or gcc >=4.7. You also need to install:
     sudo ./install-gflags.sh
     sudo ldconfig
 
-## Screenshots
-
-- --nocolor: http://imgur.com/a/IQQcj
-- --256color: http://imgur.com/a/YY3kR
-- --256color_hack1: http://imgur.com/a/X30vd
-
 ## Invocation
 
     make
     ./hiptext whatever.png
     ./hiptext whatever.avi
-    ./hiptext --macterm whatever.png
-    ./hiptext --xterm256_hack2 whatever.png
+    ./hiptext --spectrum                        # Show color spectrum graph
+    ./hiptext --macterm whatever.png            # The absolute best (Mac only)
+    ./hiptext --xterm256unicode whatever.png    # Best on xterm/gnome-terminal
+    ./hiptext --xterm256 whatever.png           # Default
     ./hiptext --nocolor whatever.png
     ./hiptext --nocolor --chars=" .oO0" whatever.png

@@ -5,6 +5,10 @@
 #include <algorithm>
 #include <cmath>
 #include <glog/logging.h>
+#include <tuple>
+
+using std::max;
+using std::min;
 
 const Pixel Pixel::kClear = {   0,   0,   0,   0 };
 const Pixel Pixel::kBlack = {   0,   0,   0, 255 };
@@ -67,6 +71,29 @@ Pixel& Pixel::ToHSV() {
     green_ = 0.0;
   }
   blue_ = max;
+  return *this;
+}
+
+Pixel& Pixel::ToYUV() {
+  const double r = red_ * 255.0, g = green_ * 255.0, b = blue_ * 255.0;
+  red_   = ( 0.299  * r + 0.587  * g + 0.114  * b      ) / 255.0;
+  green_ = (-0.1687 * r - 0.3313 * g + 0.5    * b + 128) / 255.0;
+  blue_  = ( 0.5    * r - 0.4187 * g - 0.0813 * b + 128) / 255.0;
+  return Clamp();
+}
+
+Pixel& Pixel::FromYUV() {
+  const double y = red_ * 255.0, u = green_ * 255.0, v = blue_ * 255.0;
+  red_   = (y                       + 1.402   * (v - 128)) / 255.0;
+  green_ = (y - 0.34414 * (u - 128) - 0.71414 * (v - 128)) / 255.0;
+  blue_  = (y + 1.772   * (u - 128)                      ) / 255.0;
+  return Clamp();
+}
+
+Pixel& Pixel::Clamp() {
+  red_   = max(0.0, min(1.0, red_  ));
+  green_ = max(0.0, min(1.0, green_));
+  blue_  = max(0.0, min(1.0, blue_ ));
   return *this;
 }
 
@@ -141,7 +168,7 @@ Pixel& Pixel::Mix(const Pixel& other) {
 static double A(double c) {
   // This is K/S part of the the equations on that website.
   // a = (1 - c)^2 / (2c)
-  return std::pow(1.0 - c, 2.0) / (2.0 * std::max(c, 1e-6));
+  return std::pow(1.0 - c, 2.0) / (2.0 * max(c, 1e-6));
 }
 
 // Inverse of A() : solve a = (1 - c)^2 / (2c), c

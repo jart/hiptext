@@ -16,60 +16,50 @@ extern "C" {  // ffmpeg hates C++ and won't put this in their headers.
 #include "pixel.h"
 
 Movie::Movie(const std::string& path, int width) {
-  avcodec_register_all();
-  av_register_all();
   format_ = avformat_alloc_context();
 
   // Basic information.
   CHECK(avformat_open_input(&format_, path.data(), nullptr, nullptr) == 0);
   CHECK(avformat_find_stream_info(format_, nullptr) >= 0);
-  // av_dump_format(format_, 0, path.data(), false);
+  av_dump_format(format_, 0, path.data(), false);
 
-  // Validate and find first video stream.
-  video_stream_ = -1;
-  for (unsigned i = 0; i < format_->nb_streams; ++i) {
-    if (format_->streams[i]->codec->codec_type == AVMEDIA_TYPE_VIDEO) {
-      video_stream_ = i;
-      break;
-    }
-  }
-  CHECK(video_stream_ >= 0);
+  // Make sure it contains has a video stream.
+  video_stream_ = av_find_best_stream(
+      format_, AVMEDIA_TYPE_VIDEO, -1, -1, &codec_, 0);
+  CHECK(video_stream_ >= 0) << "Couldn't find a video stream in: " << path;
+  context_ = format_->streams[video_stream_]->codec;
 
   // Extract codec and decoding context for RGB output.
-  context_ = format_->streams[video_stream_]->codec;
   LOG(INFO) << "Native dimensions: " << context_->width << "x"
             << context_->height;
   width_ = context_->width;
   height_ = context_->height;
   if (width) {  // Scale by aspect ratio when necessary.
-    float scale = (float)width/(float)width_;
+    float scale = (float)width / (float)width_;
     height_ *= scale;
     width_ = width;
     LOG(INFO) << "Scale factor: " << scale;
   }
-  CHECK(width_ > 0 && height_ > 0) <<
-      "Invalid dimensions: " << width_ << "x" <<  height_;
+  CHECK(width_ > 0 && height_ > 0)
+      << "Invalid dimensions: " << width_ << "x" <<  height_;
 
-  // sws_ hnadles native to RGB conversion and scaling.
+  // sws_ handles native to RGB conversion and scaling.
   sws_ = sws_getContext(context_->width, context_->height, context_->pix_fmt,
-                        width_, height_,  PIX_FMT_RGB24,
-                        SWS_FAST_BILINEAR, nullptr, nullptr, nullptr);
-  codec_ = avcodec_find_decoder(context_->codec_id);
-  CHECK(codec_) << "Unsupported codec.\n";
+                        width_, height_, PIX_FMT_RGB24, SWS_FAST_BILINEAR,
+                        nullptr, nullptr, nullptr);
+  CHECK(codec_ = avcodec_find_decoder(context_->codec_id))
+      << "Unsupported codec.\n";
   CHECK(avcodec_open2(context_, codec_, nullptr) >= 0)
       << "Could not open codec.\n";
 
   // Prepare Native and RGB frame buffers.
-  frame_ = avcodec_alloc_frame();
-  CHECK(frame_ != nullptr);
-  frame_rgb_ = avcodec_alloc_frame();
-  CHECK(frame_rgb_ != nullptr);
+  CHECK(frame_ = avcodec_alloc_frame());
+  CHECK(frame_rgb_ = avcodec_alloc_frame());
   int rgb_bytes = avpicture_get_size(PIX_FMT_RGB24, width_, height_);
-  buffer_ = (uint8_t *)av_malloc(rgb_bytes);
+  buffer_ = static_cast<uint8_t*>(av_malloc(rgb_bytes));
   LOG(INFO) << "RGB Buffer: " << rgb_bytes << " bytes.";
-  int prep = avpicture_fill((AVPicture *)frame_rgb_,
-                            buffer_, PIX_FMT_RGB24,
-                            width_, height_);
+  int prep = avpicture_fill(reinterpret_cast<AVPicture*>(frame_rgb_),
+                            buffer_, PIX_FMT_RGB24, width_, height_);
   CHECK(prep >= 0) << "Failed to prepare RGB buffer.";
   LOG(INFO) << "RGB dimensions: " << width  << "x" << height_;
 }
@@ -121,4 +111,9 @@ Graphic Movie::Next() {
   }
   CHECK((int)pixels.size() == width_ * height_);
   return Graphic(width_, height_, std::move(pixels));
+}
+
+void Movie::InitializeMain() {
+  avcodec_register_all();
+  av_register_all();
 }

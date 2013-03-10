@@ -36,6 +36,8 @@ class Movie {
   iterator begin() { return iterator{this}; }
   iterator end() { return iterator{this}; }
 
+  static void InitializeMain();
+
  private:
   bool done_ = false;
   int video_stream_;
@@ -47,7 +49,7 @@ class Movie {
   AVFrame* frame_rgb_;
   SwsContext* sws_;
 
-  int width_;   // Desired final size. Defaults to natural context.
+  int width_;  // Desired final size. Defaults to natural context.
   int height_;
 };
 

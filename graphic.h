@@ -64,6 +64,9 @@ class Graphic {
   Graphic& Overlay(Graphic graphic, int offset_x = 0, int offset_y = 0);
   Graphic& Opacify(const Pixel& background);
   Graphic BilinearScale(int new_width, int new_height) const;
+  Graphic& Equalize();
+  Graphic& ToYUV();
+  Graphic& FromYUV();
 
  private:
   int width_;
