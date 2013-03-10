@@ -3,6 +3,8 @@
 
 #include <unistd.h>
 #include <sys/ioctl.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <algorithm>
 #include <cassert>
 #include <cstdio>
@@ -64,7 +66,6 @@ DEFINE_int32(height, 0, "Height of rendering. Defaults to 0, in which case it "
 static const wchar_t kUpperHalfBlock = L'\u2580';
 static const wchar_t kLowerHalfBlock = L'\u2584';
 static const wchar_t kFullBlock = L'\u2588';
-
 
 struct Combo {
   Combo(Pixel color, wchar_t ch, uint8_t xterm_fg, uint8_t xterm_bg)
@@ -255,6 +256,24 @@ void PrintImage(std::ostream& os, const Graphic& graphic) {
   }
 }
 
+// Prints all the frames from a directory.
+// Assumes mplayer generated all these from a .jpg
+void PrintMovie(const string& dir, const int frames) {
+  cout << "\x1b[?25l";  // Hide cursor.
+  for (int frame = 1; frame <= frames; ++frame) {
+    std::stringstream ss;
+    ss << "\x1b[H\n";  // Jump cursor to beginning.
+    char buf[128];
+    snprintf(buf, sizeof(buf), "%s/%08d.jpg", dir.data(), frame);
+    PrintImage(ss, LoadJPEG(buf));
+    cout << ss.str();
+
+    // timespec req = {0, 500000000};
+    // nanosleep(&req, NULL);
+  }
+  cout << "\x1b[?25h";  // Show cursor.
+}
+
 Graphic GenerateSpectrum(int width, int height) {
   int bar_width = static_cast<double>(width) * 0.05;
   int spec_width = width - bar_width * 4;
@@ -310,10 +329,10 @@ inline string GetExtension(const string& path) {
 int main(int argc, char** argv) {
   // Command Validation
   if (argc < 2) {
-    cout << "Must provide input media\n";
+    cout << "Must provide path to desired image/movie file.\n";
     exit(1);
   }
-  string input = argv[1];
+  string path = argv[1];
   // if (!isatty(1))
   //   FLAGS_color = false;
   google::SetUsageMessage("hiptext [FLAGS]");
@@ -328,88 +347,24 @@ int main(int argc, char** argv) {
   if (FLAGS_xterm256_hack1)
     InitXterm256Hack1();
 
-  string extension = GetExtension(input);
+  struct ::stat dinfo;
+  ::stat(path.data(), &dinfo);
+  if (S_ISDIR(dinfo.st_mode)) {
+    // If directory, print a movie using all the frames..
+    cout << "Printing a Movie from directory.\n";
+    PrintMovie(path, 1000);
+    return 0;
+  }
+  // Otherwise, print a single image
+  string extension = GetExtension(path);
   cout << "Hiptexting: " << argv[1] << ". File Type: " << extension << "\n";
   if (extension == "png") {    
-    PrintImage(cout, LoadPNG(input));
+    PrintImage(cout, LoadPNG(path));
   } else if (extension == "jpg" || extension == "jpeg") {    
-    PrintImage(cout, LoadJPEG(input));
+    PrintImage(cout, LoadJPEG(path));
   } else {
-    // Might be a movie or something weird
+    cout << "Unknown Filetype.\n";
   }
-
-  // PrintImage(cout, LoadJPEG("obama.jpg"));
-  // PrintImage(cout, LoadLetter(L'@', Pixel::kWhite, Pixel::kClear));
-
-  // InitXterm256Hack1();
-  // Graphic spectrum = GenerateSpectrum(200, 100);
-  // for (int y = 0; y < spectrum.height(); ++y) {
-  //   for (int x = 0; x < spectrum.width(); ++x) {
-  //     spectrum.Get(x, y) = QuantizeXterm256Hack1(spectrum.Get(x, y)).color;
-  //     spectrum.Get(x, y) = xterm_to_rgb(rgb_to_xterm256(spectrum.Get(x, y)));
-  //   }
-  // }
-  // WritePNG(spectrum, "/home/jart/www/graphic.png");
-
-  // TermPrinter out(cout, Pixel::kBlack, false);
-  // out.SetBackground256(Pixel::kGreen);
-  // out.SetForeground256(Pixel::kGreen);
-  // out << L'\u2580';
-  // out << L'\u2580';
-  // out << L'\u2580';
-  // out << L'\u2580';
-  // out << L'\n';
-
-  // cout << "\x1b[?25l";  // Hide cursor.
-  // for (int frame = 1; frame <= 1000; ++frame) {
-  //   std::stringstream ss;
-  //   ss << "\x1b[H\n";
-  //   char buf[128];
-  //   snprintf(buf, sizeof(buf), "rickroll/%08d.jpg", frame);
-  //   PrintImage(ss, LoadJPEG(buf));
-  //   cout << ss.str();
-  //   // timespec req = {0, 50000000};
-  //   // nanosleep(&req, NULL);
-  // }
-
-  // for (int code = 40; code < 256; ++code) {
-  //   std::ostringstream out;
-  //   string val;
-  //   Pixel pix;
-
-  //   for (int n = 0; n < 10; ++n) {
-  //     cout << "\x1b[38;5;" << code << "m"
-  //          << wstring(80, kFullBlock)
-  //          << "\x1b[0m\n";
-  //   }
-  //   cout << "What dost thou see? ";
-  //   do { std::cin >> val; } while (val == "");
-  //   pix = Pixel(val);
-  //   out << "[0][" << code << "] = {"
-  //       << static_cast<int>(pix.red() * 255) << ", "
-  //       << static_cast<int>(pix.green() * 255) << ", "
-  //       << static_cast<int>(pix.blue() * 255) << "},"
-  //       << "\n";
-  //   cout << "\n";
-
-  //   for (int n = 0; n < 10; ++n) {
-  //     cout << "\x1b[48;5;" << code << "m"
-  //          << string(80, L' ')
-  //          << "\x1b[0m\n";
-  //   }
-  //   cout << "What dost thou see? ";
-  //   do { std::cin >> val; } while (val == "");
-  //   pix = Pixel(val);
-  //   out << "[1][" << code << "] = {"
-  //       << static_cast<int>(pix.red() * 255) << ", "
-  //       << static_cast<int>(pix.green() * 255) << ", "
-  //       << static_cast<int>(pix.blue() * 255) << "},"
-  //       << "\n";
-  //   cout << "\n";
-
-  //   std::ofstream("terminal.app.txt", std::ios_base::app) << out.str();
-  // }
-
   return 0;
 }
 
