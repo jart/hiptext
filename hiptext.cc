@@ -65,6 +65,7 @@ static const wchar_t kUpperHalfBlock = L'\u2580';
 static const wchar_t kLowerHalfBlock = L'\u2584';
 static const wchar_t kFullBlock = L'\u2588';
 
+
 struct Combo {
   Combo(Pixel color, wchar_t ch, uint8_t xterm_fg, uint8_t xterm_bg)
       : color(color), ch(ch), xterm_fg(xterm_fg), xterm_bg(xterm_bg) {}
@@ -300,9 +301,21 @@ Graphic GenerateSpectrum(int width, int height) {
 }
 
 
+inline string GetExtension(const string& path) {
+  string s = path.substr(path.find_last_of('.') + 1);
+  std::transform(s.begin(), s.end(), s.begin(), tolower);
+  return s;
+}
+
 int main(int argc, char** argv) {
-  if (!isatty(1))
-    FLAGS_color = false;
+  // Command Validation
+  if (argc < 2) {
+    cout << "Must provide input media\n";
+    exit(1);
+  }
+  string input = argv[1];
+  // if (!isatty(1))
+  //   FLAGS_color = false;
   google::SetUsageMessage("hiptext [FLAGS]");
   google::SetVersionString("0.1");
   google::ParseCommandLineFlags(&argc, &argv, true);
@@ -315,41 +328,17 @@ int main(int argc, char** argv) {
   if (FLAGS_xterm256_hack1)
     InitXterm256Hack1();
 
-  // Graphic lol(256, 3);
-  // for (int fg = 17; fg < 232; ++fg) {
-  //   Pixel pix = xterm_to_rgb(fg);
-  //   lol.Get(pix.red() * 255, 0) = Pixel::kBlack;
-  //   lol.Get(pix.green() * 255, 1) = Pixel::kBlack;
-  //   lol.Get(pix.blue() * 255, 2) = Pixel::kBlack;
-  // }
-  // WritePNG(lol, "/home/jart/www/graphic.png");
+  string extension = GetExtension(input);
+  cout << "Hiptexting: " << argv[1] << ". File Type: " << extension << "\n";
+  if (extension == "png") {    
+    PrintImage(cout, LoadPNG(input));
+  } else if (extension == "jpg" || extension == "jpeg") {    
+    PrintImage(cout, LoadJPEG(input));
+  } else {
+    // Might be a movie or something weird
+  }
 
-  // Graphic lol(256, 256, Pixel::Parse("grey"));
-  // for (int fg = 16; fg < 256; ++fg) {
-  //   Pixel pix = xterm_to_rgb(fg);
-  //   cout << fg << " = " << pix << "\n";
-  //   lol.Get(pix.red() * 255,
-  //           pix.blue() * 255) = Pixel(0, 0, pix.blue());
-  // }
-  // WritePNG(lol, "/home/jart/www/graphic.png");
-
-  // InitXterm256Hack1();
-  // Graphic lol(256, 256, Pixel::Parse("grey"));
-  // int n = 0;
-  // for (const auto& combo : g_combos) {
-  //   n++;
-  //   Pixel pix = combo.color;
-  //   CHECK(pix.red() >= 0) << n;
-  //   lol.Get(pix.red() * 255,
-  //           pix.green() * 255) = Pixel(0, 0, pix.blue());
-  // }
-  // WritePNG(lol, "/home/jart/www/graphic.png");
-
-  // TermPrinter out(cout, Pixel::Parse(FLAGS_bg), FLAGS_bgprint);
-  // out.SetBold(true);
-  // out << "hello\n";
-  PrintImage(cout, LoadPNG("balls.png"));
-  PrintImage(cout, LoadJPEG("obama.jpg"));
+  // PrintImage(cout, LoadJPEG("obama.jpg"));
   // PrintImage(cout, LoadLetter(L'@', Pixel::kWhite, Pixel::kClear));
 
   // InitXterm256Hack1();
