@@ -219,7 +219,7 @@ void PrintImageNoColor(std::ostream& os, const Graphic& graphic) {
         os << quantizer.Quantize(static_cast<int>(pixel.grey() * 255));
       }
     }
-    cout << "\n\r";
+    cout << "\n";
   }
 }
 
@@ -247,8 +247,6 @@ void PrintImage(std::ostream& os, const Graphic& graphic) {
       PrintImageMacterm(
           os, graphic.BilinearScale(width, height));
     } else {
-      // PrintImageXterm256(
-      //     os, graphic.BilinearScale(term_width, term_height));
       PrintImageXterm256(
           os, graphic.BilinearScale(width, height / 2));
     }
@@ -275,7 +273,6 @@ void PrintMovie(const string& dir, const int frames) {
     snprintf(buf, sizeof(buf), "%s/%08d.jpg", dir.data(), frame);
     PrintImage(ss, LoadJPEG(buf));
     cout << ss.str();
-
     // timespec req = {0, 500000000};
     // nanosleep(&req, NULL);
   }
