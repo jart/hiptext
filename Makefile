@@ -11,16 +11,16 @@
 #  - CXXFLAGS="-g -O3 -DNDEBUG" make  # Create a faster build.
 #  - make -pn | less               # View implicit make rules and variables.
 
-CXX          = g++-4.7
+CXX          = clang++
 LINK.o       = $(LINK.cc)
 PREFIX      ?= /usr/local
 TARGET_ARCH ?= -march=native
 CXXFLAGS    ?= -g -O3
-CXXFLAGS    += -std=c++11 -Wall -Werror
+CXXFLAGS    += -std=c++11 -Wall -Wextra -Werror -pedantic
 LDLIBS      += -lm -lglog -lgflags -lpng -ljpeg
 LDLIBS      += $(shell freetype-config --libs)
 
-ifeq (jart,$(USER))
+ifeq ($(shell hostname),bean)
 CXXFLAGS += -I/usr/include/x86_64-linux-gnu/c++/4.7
 endif
 
@@ -29,6 +29,7 @@ SOURCES = \
 	font.o \
 	graphic.o \
 	jpeg.o \
+	macterm.o \
 	pixel.o \
 	pixel_parse.o \
 	png.o \

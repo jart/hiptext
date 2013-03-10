@@ -1,10 +1,11 @@
 // hiptext - Image to Text Converter
 // Copyright (c) 2013 Justine Tunney
 
-#include <cstdio>
 #include <unistd.h>
 #include <sys/ioctl.h>
 #include <algorithm>
+#include <cassert>
+#include <cstdio>
 #include <fstream>
 #include <iostream>
 #include <iterator>
@@ -24,6 +25,7 @@
 #include "font.h"
 #include "graphic.h"
 #include "jpeg.h"
+#include "macterm.h"
 #include "pixel.h"
 #include "png.h"
 #include "unicode.h"
@@ -37,6 +39,7 @@ using std::wstring;
 DEFINE_string(chars, u8"\u00a0\u2591\u2592\u2593\u2588",
               "The quantization character array.");
 DEFINE_bool(color, true, "Use --nocolor to disable color altogether.");
+DEFINE_bool(macterm, false, "Optimize for Mac OS X Terminal.app.");
 DEFINE_bool(xterm256, true, "Enable xterm-256color output.");
 DEFINE_bool(xterm256_hack1, false, "Enable xterm256 color hack #1.");
 DEFINE_bool(xterm256_hack2, false, "Enable xterm256 color hack #2.");
@@ -102,6 +105,7 @@ const Combo& QuantizeXterm256Hack1(const Pixel& color) {
     }
   }
   CHECK_NOTNULL(best);
+  assert(best != nullptr);
   return *best;
 }
 
@@ -181,6 +185,23 @@ void PrintImageXterm256Hack2(std::ostream& os, const Graphic& graphic) {
   }
 }
 
+void PrintImageMacterm(std::ostream& os, const Graphic& graphic) {
+  TermPrinter out(os);
+  Pixel bg = Pixel(FLAGS_bg);
+  int height = graphic.height() - graphic.height() % 2;
+  for (int y = 0; y < height; y += 2) {
+    for (int x = 0; x < graphic.width(); ++x) {
+      MactermColor color(graphic.Get(x, y + 0).Copy().Opacify(bg),
+                         graphic.Get(x, y + 1).Copy().Opacify(bg));
+      out.SetForeground256(color.fg());
+      out.SetBackground256(color.bg());
+      out << color.symbol();
+    }
+    out.Reset();
+    out << "\n";
+  }
+}
+
 void PrintImageNoColor(std::ostream& os, const Graphic& graphic) {
   Pixel bg = Pixel(FLAGS_bg);
   wstring chars = DecodeText(FLAGS_chars);
@@ -217,6 +238,9 @@ void PrintImage(std::ostream& os, const Graphic& graphic) {
           os, graphic.BilinearScale(width, height / 2));
     } else if (FLAGS_xterm256_hack2) {
       PrintImageXterm256Hack2(
+          os, graphic.BilinearScale(width, height));
+    } else if (FLAGS_macterm) {
+      PrintImageMacterm(
           os, graphic.BilinearScale(width, height));
     } else {
       // PrintImageXterm256(
@@ -324,8 +348,8 @@ int main(int argc, char** argv) {
   // TermPrinter out(cout, Pixel::Parse(FLAGS_bg), FLAGS_bgprint);
   // out.SetBold(true);
   // out << "hello\n";
-  // PrintImage(cout, LoadPNG("balls.png"));
-  // PrintImage(cout, LoadJPEG("obama.jpg"));
+  PrintImage(cout, LoadPNG("balls.png"));
+  PrintImage(cout, LoadJPEG("obama.jpg"));
   // PrintImage(cout, LoadLetter(L'@', Pixel::kWhite, Pixel::kClear));
 
   // InitXterm256Hack1();
@@ -347,19 +371,19 @@ int main(int argc, char** argv) {
   // out << L'\u2580';
   // out << L'\n';
 
-  cout << "\x1b[?25l";  // Hide cursor.
-  for (int frame = 1; frame <= 1000; ++frame) {
-    std::stringstream ss;
-    ss << "\x1b[H\n";
-    char buf[128];
-    snprintf(buf, sizeof(buf), "rickroll/%08d.jpg", frame);
-    PrintImage(ss, LoadJPEG(buf));
-    cout << ss.str();
-    timespec req = {0, 50000000};
-    nanosleep(&req, NULL);
-  }
+  // cout << "\x1b[?25l";  // Hide cursor.
+  // for (int frame = 1; frame <= 1000; ++frame) {
+  //   std::stringstream ss;
+  //   ss << "\x1b[H\n";
+  //   char buf[128];
+  //   snprintf(buf, sizeof(buf), "rickroll/%08d.jpg", frame);
+  //   PrintImage(ss, LoadJPEG(buf));
+  //   cout << ss.str();
+  //   // timespec req = {0, 50000000};
+  //   // nanosleep(&req, NULL);
+  // }
 
-  // for (int code = 17; code < 232; ++code) {
+  // for (int code = 40; code < 256; ++code) {
   //   std::ostringstream out;
   //   string val;
   //   Pixel pix;
@@ -394,7 +418,7 @@ int main(int argc, char** argv) {
   //       << "\n";
   //   cout << "\n";
 
-  //   std::ofstream("terminal.app.txt", std::ios_base::app) << out;
+  //   std::ofstream("terminal.app.txt", std::ios_base::app) << out.str();
   // }
 
   return 0;
