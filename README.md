@@ -1,5 +1,7 @@
 # hiptext - Render Images as Text
 
+![Last Supper in Macterm](http://i.imgur.com/7TfrQsL.png)
+
 ![Obama in Macterm](http://i.imgur.com/UnfnpMr.png)
 
 Hiptext is a fun little research project of Justine Tunney to find new and
