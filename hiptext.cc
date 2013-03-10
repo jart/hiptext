@@ -88,6 +88,7 @@ struct Combo {
 // std::unordered_map<int, Combo> g_combos;
 std::vector<Combo> g_combos;
 int g_width;
+int g_cursor_saved;
 
 void InitXterm256Hack1() {
   for (int xterm_bg = 17; xterm_bg < 256; ++xterm_bg) {
@@ -256,15 +257,19 @@ winsize GetTerminalSize() {
 }
 
 void HideCursor() {
-  cout << "\x1b[?25l";
+  cout << "\x1b[s";     // ANSI save cursor position.
+  cout << "\x1b[?25l";  // ANSI make cursor invisible.
+  g_cursor_saved = true;
 }
 
 void ShowCursor() {
-  cout << "\x1b[?25h";
+  g_cursor_saved = false;
+  cout << "\x1b[u";     // ANSI restore cursor position.
+  cout << "\x1b[?25h";  // ANSI make cursor visible.
 }
 
 void ResetCursor() {
-  cout << "\x1b[H\n";
+  cout << "\x1b[H";     // ANSI put cursor in top left.
 }
 
 void PrintMovie(Movie movie) {
@@ -272,21 +277,6 @@ void PrintMovie(Movie movie) {
   for (auto graphic : movie) {
     ResetCursor();
     PrintImage(cout, graphic);
-  }
-  ShowCursor();
-}
-
-// Prints all the frames from a directory.
-// Assumes mplayer generated all these from a .jpg
-void PrintMovie(const string& dir, const int frames) {
-  HideCursor();
-  for (int frame = 1; frame <= frames; ++frame) {
-    ResetCursor();
-    std::stringstream ss;
-    char buf[128];
-    snprintf(buf, sizeof(buf), "%s/%08d.jpg", dir.data(), frame);
-    PrintImage(ss, LoadJPEG(buf));
-    cout << ss.str();
     if (FLAGS_stepthrough) {
       string lol;
       std::getline(std::cin, lol);
@@ -346,11 +336,11 @@ inline string GetExtension(const string& path) {
   return s;
 }
 
-void sig_handler(int sig) {
-  // Ensure that the terminal cursor is visible even after premature exit.
-  cout << sig;
-  ShowCursor();
-  exit(1);
+void OnCtrlC(int /*signal*/) {
+  if (g_cursor_saved) {
+    ShowCursor();
+  }
+  exit(0);
 }
 
 int main(int argc, char** argv) {
@@ -364,6 +354,7 @@ int main(int argc, char** argv) {
   const char* lang = std::getenv("LANG");
   if (lang == nullptr) lang = "en_US.utf8";
   std::locale::global(std::locale(lang));
+  signal(SIGINT, OnCtrlC);
   InitFont();
   if (FLAGS_xterm256_hack1)
     InitXterm256Hack1();
@@ -378,19 +369,10 @@ int main(int argc, char** argv) {
   int term_width = GetTerminalSize().ws_col;
   g_width = std::min(term_width, FLAGS_width ? FLAGS_width : term_width);
 
-  signal(SIGINT, &sig_handler);
-  struct stat dinfo;
-  stat(path.data(), &dinfo);
-  if (S_ISDIR(dinfo.st_mode)) {
-    // If directory, print a movie using all the frames..
-    cout << "Printing a Movie from directory.\n";
-    PrintMovie(path, 1000);
-    return 0;
-  }
-
   // Otherwise, print a single media file.
   string extension = GetExtension(path);
-  cout << "Hiptexting: " << argv[1] << ". File Type: " << extension << "\n";
+  LOG(INFO) << "Hiptexting: " << argv[1];
+  LOG(INFO) << "File Type: " << extension;
   if (extension == "png") {
     PrintImage(cout, LoadPNG(path));
   } else if (extension == "jpg" || extension == "jpeg") {
@@ -399,9 +381,10 @@ int main(int argc, char** argv) {
              extension == "avi" || extension == "mkv") {
     PrintMovie(Movie(path, g_width));
   } else {
-    cout << "Unknown Filetype.\n";
+    std::cerr << "Unknown Filetype: \n" << extension;
+    exit(1);
   }
-  return 0;
+  exit(0);
 }
 
 // For Emacs:

@@ -1,4 +1,49 @@
 
+void HideCursor() {
+  g_cursor_saved = true;
+  cout << "\x1b[?25l\x1b[s";
+}
+
+void ShowCursor() {
+  g_cursor_saved = false;
+  cout << "\x1b[u\x1b[?25h";
+}
+
+void ResetCursor() {
+  cout << "\x1b[H";
+}
+
+
+  signal(SIGINT, OnCtrlC);
+  struct stat dinfo;
+  stat(path.data(), &dinfo);
+  if (S_ISDIR(dinfo.st_mode)) {
+    // If directory, print a movie using all the frames..
+    cout << "Printing a Movie from directory.\n";
+    PrintMovie(path, 1000);
+    exit(0);
+  }
+
+// Prints all the frames from a directory.
+// Assumes mplayer generated all these from a .jpg
+void PrintMovie(const string& dir, const int frames) {
+  HideCursor();
+  for (int frame = 1; frame <= frames; ++frame) {
+    ResetCursor();
+    std::stringstream ss;
+    char buf[128];
+    snprintf(buf, sizeof(buf), "%s/%08d.jpg", dir.data(), frame);
+    PrintImage(ss, LoadJPEG(buf));
+    cout << ss.str();
+    if (FLAGS_stepthrough) {
+      string lol;
+      std::getline(std::cin, lol);
+    }
+  }
+  ShowCursor();
+}
+
+
   // Graphic lol(256, 3);
   // for (int fg = 17; fg < 232; ++fg) {
   //   Pixel pix = xterm_to_rgb(fg);
