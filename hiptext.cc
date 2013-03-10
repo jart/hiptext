@@ -258,11 +258,23 @@ void PrintImage(std::ostream& os, const Graphic& graphic) {
 }
 
 inline void HideCursor() {
-  cout << "\x1b[?25l"; 
+  cout << "\x1b[?25l";
 }
 
 inline void ShowCursor() {
-  cout << "\x1b[?25h"; 
+  cout << "\x1b[?25h";
+}
+
+inline void ResetCursor() {
+  cout << "\x1b[H\n"; 
+}
+
+void PrintMovie(Movie movie) {
+  // for (const auto& frame : movie) {
+  while(1) {
+    ResetCursor();
+    PrintImage(cout, movie.Next());
+  }
 }
 
 // Prints all the frames from a directory.
@@ -270,8 +282,8 @@ inline void ShowCursor() {
 void PrintMovie(const string& dir, const int frames) {
   HideCursor();
   for (int frame = 1; frame <= frames; ++frame) {
+    ResetCursor();
     std::stringstream ss;
-    ss << "\x1b[H\n";  // Jump cursor to beginning.
     char buf[128];
     snprintf(buf, sizeof(buf), "%s/%08d.jpg", dir.data(), frame);
     PrintImage(ss, LoadJPEG(buf));
@@ -379,8 +391,8 @@ int main(int argc, char** argv) {
   } else if (extension == "jpg" || extension == "jpeg") {    
     PrintImage(cout, LoadJPEG(path));
   } else if (extension == "mov") {
-    Movie movie = Movie(path);
-    movie.Initialize();
+    Movie movie = Movie(path, FLAGS_width);
+    PrintMovie(movie);
   } else {
     cout << "Unknown Filetype.\n";
   }
