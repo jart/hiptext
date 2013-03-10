@@ -17,7 +17,7 @@ PREFIX      ?= /usr/local
 TARGET_ARCH ?= -march=native
 CXXFLAGS    ?= -g -O3
 CXXFLAGS    += -std=c++11 -Wall -Wextra -Werror -pedantic
-LDLIBS      += -lm -lglog -lgflags -lpng -ljpeg
+LDLIBS      += -lm -lglog -lgflags -lpng -ljpeg -lavcodec -lavformat -lavutil
 LDLIBS      += $(shell freetype-config --libs)
 
 ifeq ($(shell hostname),bean)
@@ -30,6 +30,7 @@ SOURCES = \
 	graphic.o \
 	jpeg.o \
 	macterm.o \
+	movie.o \
 	pixel.o \
 	pixel_parse.o \
 	png.o \
