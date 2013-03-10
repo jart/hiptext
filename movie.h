@@ -5,23 +5,47 @@
 #define HIPTEXT_MOVIE_H_
 
 #include <string>
+#include <iterator>
 
-class Graphic;
+#include "graphic.h"
+
 struct AVCodec;
-struct AVFormatContext;
 struct AVCodecContext;
+struct AVFormatContext;
+struct AVFrame;
+struct SwsContext;
 
 class Movie {
  public:
   Movie(const std::string& path);
-  bool Initialize();
+  Movie(const std::string& path, int width);
+  void Init(const std::string& path, int width);
   Graphic Next();
 
+  struct iterator {
+    Graphic operator*() { return movie_->Next(); }
+    const iterator& operator++() { return *this; } 
+    bool operator!=(const iterator&) const { return !movie_->Done(); }
+    Movie* movie_;
+  };
+  iterator begin() { return iterator{this}; }
+  iterator end() { return iterator{this}; }
+
+  inline bool Done() { return done_; }
+
  private:
-  std::string path_;
+  bool done_ = false;
+  int video_stream_;
+  uint8_t* buffer_;
+  AVCodec* codec_;
+  AVCodecContext* context_;
   AVFormatContext* format_;
-  // AVCodec* codec_;
-  // AVCodecContext* context_;
+  AVFrame* frame_; 
+  AVFrame* frame_rgb_; 
+  SwsContext* sws_;
+
+  int width_;   // Desired final size. Defaults to natural context.
+  int height_;
 };
 
 #endif  // HIPTEXT_MOVIE_H_
