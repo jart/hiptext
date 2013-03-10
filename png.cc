@@ -14,7 +14,7 @@
 #include "pixel.h"
 
 Graphic LoadPNG(const std::string& path) {
-  FILE* fp = fopen(path.c_str(), "rb");
+  FILE* fp = fopen(path.data(), "rb");
   PCHECK(fp) << path;
   uint8_t header[8];
   PCHECK(fread(header, 8, 1, fp) == 1) << path;

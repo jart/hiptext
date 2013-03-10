@@ -12,12 +12,14 @@
 #  - make -pn | less               # View implicit make rules and variables.
 
 CXX          = clang++
+# CXX          = g++-4.7
 LINK.o       = $(LINK.cc)
 PREFIX      ?= /usr/local
 TARGET_ARCH ?= -march=native
 CXXFLAGS    ?= -g -O3
 CXXFLAGS    += -std=c++11 -Wall -Wextra -Werror -pedantic
-LDLIBS      += -lm -lglog -lgflags -lpng -ljpeg
+LDFLAGS     += -L/usr/lib/x86_64-linux-gnu
+LDLIBS      += -lm -lglog -lgflags -lpng -ljpeg -lavcodec -lavformat -lavutil
 LDLIBS      += $(shell freetype-config --libs)
 
 ifeq ($(shell hostname),bean)
@@ -30,6 +32,7 @@ SOURCES = \
 	graphic.o \
 	jpeg.o \
 	macterm.o \
+	movie.o \
 	pixel.o \
 	pixel_parse.o \
 	png.o \

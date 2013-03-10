@@ -20,7 +20,7 @@ static void OnError(j_common_ptr cinfo) {
 }
 
 Graphic LoadJPEG(const std::string& path) {
-  FILE* fp = fopen(path.c_str(), "rb");
+  FILE* fp = fopen(path.data(), "rb");
   PCHECK(fp) << path;
   jpeg_decompress_struct cinfo;
   jpeg_error_mgr jerr;
