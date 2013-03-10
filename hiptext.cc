@@ -140,7 +140,7 @@ void PrintImageXterm256(std::ostream& os, const Graphic& graphic) {
       out << FLAGS_space;
     }
     out.Reset();
-    out << "\n";  // << y << ": ";
+    out << "\n";
   }
 }
 
@@ -273,15 +273,9 @@ inline void ResetCursor() {
 
 void PrintMovie(Movie movie) {
   HideCursor();
-  while(1) {
+  for (auto graphic : movie) {
     ResetCursor();
-    PrintImage(cout, movie.Next());
-    timespec req = {0, 50000000};
-    nanosleep(&req, NULL);
-    if (FLAGS_stepthrough) {
-      string lol;
-      std::getline(std::cin, lol);
-    }
+    PrintImage(cout, graphic);
   }
   ShowCursor();
 }
@@ -297,8 +291,6 @@ void PrintMovie(const string& dir, const int frames) {
     snprintf(buf, sizeof(buf), "%s/%08d.jpg", dir.data(), frame);
     PrintImage(ss, LoadJPEG(buf));
     cout << ss.str();
-    // timespec req = {0, 500000000};
-    // nanosleep(&req, NULL);
     if (FLAGS_stepthrough) {
       string lol;
       std::getline(std::cin, lol);

@@ -3,6 +3,7 @@
 
 #include "movie.h"
 
+#include <iterator>
 #include <glog/logging.h>
 extern "C" {  // ffmpeg hates C++ and won't put this in their headers.
 #include <libavformat/avformat.h>
@@ -17,9 +18,11 @@ Movie::Movie(const std::string& path) {
   Init(path, 0);
 }
 
+
 Movie::Movie(const std::string& path, int width) {
   Init(path, width);
 }
+
 
 void Movie::Init(const std::string& path, int width) {
   avcodec_register_all();
@@ -46,16 +49,16 @@ void Movie::Init(const std::string& path, int width) {
   LOG(INFO) << "Native dimensions: " << context_->width << "x" << context_->height;
   width_ = context_->width;
   height_ = context_->height;
-  if (width) {  // Scale by aspect ratio if necessary.
+  if (width) {  // Scale by aspect ratio when necessary.
     float scale = (float)width/(float)width_;
-    LOG(INFO) << "Scale factor: " << scale;
     height_ *= scale;
-    // height_ = context_->height / 2;
     width_ = width;
+    LOG(INFO) << "Scale factor: " << scale;
   }
   CHECK(width_ > 0 && height_ > 0) <<
       "Invalid dimensions: " << width_ << "x" <<  height_;
 
+  // sws_ hnadles native to RGB conversion and scaling.
   sws_ = sws_getContext(context_->width, context_->height, context_->pix_fmt,
                         width_, height_,  PIX_FMT_RGB24,
                         SWS_FAST_BILINEAR, nullptr, nullptr, nullptr);
@@ -63,12 +66,11 @@ void Movie::Init(const std::string& path, int width) {
   CHECK(codec_) << "Unsupported codec.\n";
   CHECK(avcodec_open2(context_, codec_, nullptr) >= 0) << "Could not open codec.\n";
 
+  // Prepare Native and RGB frame buffers.
   frame_ = avcodec_alloc_frame(); 
   CHECK(frame_ != nullptr);
   frame_rgb_ = avcodec_alloc_frame(); 
   CHECK(frame_rgb_ != nullptr);
-
-  // Prepare RGB buffer.
   int rgb_bytes = avpicture_get_size(PIX_FMT_RGB24, width_, height_);
   buffer_ = (uint8_t *)av_malloc(rgb_bytes);
   LOG(INFO) << "RGB Buffer: " << rgb_bytes << " bytes.";
@@ -80,13 +82,14 @@ void Movie::Init(const std::string& path, int width) {
   done_ = false;
 }
 
+
 Graphic Movie::Next() {
-  int finished = 0;   // Find immediate next video frame.
+  int finished = 0;   // Extract immediate next video frame.
   while (!finished) {
     AVPacket packet;
     if (av_read_frame(format_, &packet) < 0) {
       done_ = true;
-      LOG(INFO) << "Done reading.";
+      LOG(INFO) << "Movie complete.";
       return Graphic(0,0);
     }
     if (packet.stream_index == video_stream_) {
@@ -95,34 +98,20 @@ Graphic Movie::Next() {
     av_free_packet(&packet);
   }
 
-  // Convert av native format to RGB.
+  // Convert Native format to RGB.
   sws_scale(sws_, frame_->data,
             frame_->linesize, 0, context_->height,
             frame_rgb_->data, frame_rgb_->linesize);
-  // Convert RGB to hiptext representation.
-  LOG(INFO) << "av_read_frame: video frame. " << width_ << "x" << height_;
+
   std::vector<Pixel> pixels;
   int data_width = frame_rgb_->linesize[0];
   CHECK(data_width == 3*width_);
+  // Convert RGB to hiptext representation.
   for (int y = 0; y < height_; ++y) {
-    LOG(INFO) << "Y is " << y;
     uint8_t* row = frame_rgb_->data[0] + data_width * y;
-    int meow = 0;
     for (int x = 0; x < data_width; x += 3) {
-      int r = row[x];
-      int g = row[x+1];
-      int b = row[x+2];
-      CHECK(r < 256);
-      CHECK(g < 256);
-      CHECK(b < 256);
-      if (r > 0) {
-//        LOG(INFO) << "Pixel[" << (x/3) << ", " << y << "] = (" <<
-///            r << ", " << g << ", " << b << ")"; 
-        meow = 1;
-      }
-      pixels.emplace_back(r, g, b);
+      pixels.emplace_back(row[x], row[x+1], row[x+2]);
     }
-    if (meow) LOG(INFO) << "lulz";
   }
   CHECK((int)pixels.size() == width_ * height_);
   return Graphic(width_, height_, std::move(pixels));
