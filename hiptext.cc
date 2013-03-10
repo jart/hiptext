@@ -194,7 +194,7 @@ void PrintImageNoColor(std::ostream& os, const Graphic& graphic) {
         os << quantizer.Quantize(static_cast<int>(pixel.grey() * 255));
       }
     }
-    cout << "\n";
+    cout << "\n\r";
   }
 }
 
@@ -226,8 +226,7 @@ void PrintImage(std::ostream& os, const Graphic& graphic) {
     }
   } else {
     PrintImageNoColor(
-        os, graphic.BilinearScale(width, AspectHeight(
-            width, graphic.width(), graphic.height()) / 2));
+        os, graphic.BilinearScale(width, height / 2));
   }
 }
 
@@ -275,6 +274,7 @@ Graphic GenerateSpectrum(int width, int height) {
   }
   return res;
 }
+
 
 int main(int argc, char** argv) {
   if (!isatty(1))
