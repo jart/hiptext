@@ -26,10 +26,12 @@ You need clang or gcc >=4.7. You also need to install:
 - --256color: http://imgur.com/a/YY3kR
 - --256color_hack1: http://imgur.com/a/X30vd
 
-## Demo Invocation
+## Invocation
 
     make
-    ./hiptext
-    ./hiptext --nocolor
-    ./hiptext --nocolor --chars=" .oO0"
-    ./hiptext --hinting
+    ./hiptext whatever.png
+    ./hiptext whatever.avi
+    ./hiptext --macterm whatever.png
+    ./hiptext --xterm256_hack2 whatever.png
+    ./hiptext --nocolor whatever.png
+    ./hiptext --nocolor --chars=" .oO0" whatever.png

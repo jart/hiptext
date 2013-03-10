@@ -1,5 +1,5 @@
 // hiptext - Image to Text Converter
-// Copyright (c) 2013 Justine Tunney
+// By Justine Tunney
 
 #include <unistd.h>
 #include <sys/ioctl.h>
@@ -397,8 +397,7 @@ int main(int argc, char** argv) {
     PrintImage(cout, LoadJPEG(path));
   } else if (extension == "mov" || extension == "mp4" || extension == "flv" ||
              extension == "avi" || extension == "mkv") {
-    Movie movie = Movie(path, g_width);
-    PrintMovie(movie);
+    PrintMovie(Movie(path, g_width));
   } else {
     cout << "Unknown Filetype.\n";
   }

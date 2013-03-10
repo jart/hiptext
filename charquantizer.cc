@@ -1,4 +1,4 @@
-// Copyright (c) 2013 Justine Tunney
+// By Justine Tunney
 // hiptext - Image to Text Converter
 
 #include "charquantizer.h"

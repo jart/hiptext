@@ -1,5 +1,5 @@
 // hiptext - Image to Text Converter
-// Copyright (c) 2013 Justine Tunney
+// By Justine Tunney
 
 // Complete CSS3/X11 Color Parser Implementation (and more!)
 

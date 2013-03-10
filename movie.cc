@@ -1,9 +1,10 @@
 // hiptext - Image to Text Converter
-// Copyright (c) 2013 Serene Han & Justine Tunney
+// By Serene Han & Justine Tunney
 
 #include "movie.h"
 
-#include <iterator>
+#include <cstring>
+
 #include <glog/logging.h>
 extern "C" {  // ffmpeg hates C++ and won't put this in their headers.
 #include <libavformat/avformat.h>
@@ -14,17 +15,7 @@ extern "C" {  // ffmpeg hates C++ and won't put this in their headers.
 #include "graphic.h"
 #include "pixel.h"
 
-Movie::Movie(const std::string& path) {
-  Init(path, 0);
-}
-
-
 Movie::Movie(const std::string& path, int width) {
-  Init(path, width);
-}
-
-
-void Movie::Init(const std::string& path, int width) {
   avcodec_register_all();
   av_register_all();
   format_ = avformat_alloc_context();
@@ -46,7 +37,8 @@ void Movie::Init(const std::string& path, int width) {
 
   // Extract codec and decoding context for RGB output.
   context_ = format_->streams[video_stream_]->codec;
-  LOG(INFO) << "Native dimensions: " << context_->width << "x" << context_->height;
+  LOG(INFO) << "Native dimensions: " << context_->width << "x"
+            << context_->height;
   width_ = context_->width;
   height_ = context_->height;
   if (width) {  // Scale by aspect ratio when necessary.
@@ -64,12 +56,13 @@ void Movie::Init(const std::string& path, int width) {
                         SWS_FAST_BILINEAR, nullptr, nullptr, nullptr);
   codec_ = avcodec_find_decoder(context_->codec_id);
   CHECK(codec_) << "Unsupported codec.\n";
-  CHECK(avcodec_open2(context_, codec_, nullptr) >= 0) << "Could not open codec.\n";
+  CHECK(avcodec_open2(context_, codec_, nullptr) >= 0)
+      << "Could not open codec.\n";
 
   // Prepare Native and RGB frame buffers.
-  frame_ = avcodec_alloc_frame(); 
+  frame_ = avcodec_alloc_frame();
   CHECK(frame_ != nullptr);
-  frame_rgb_ = avcodec_alloc_frame(); 
+  frame_rgb_ = avcodec_alloc_frame();
   CHECK(frame_rgb_ != nullptr);
   int rgb_bytes = avpicture_get_size(PIX_FMT_RGB24, width_, height_);
   buffer_ = (uint8_t *)av_malloc(rgb_bytes);
@@ -79,9 +72,14 @@ void Movie::Init(const std::string& path, int width) {
                             width_, height_);
   CHECK(prep >= 0) << "Failed to prepare RGB buffer.";
   LOG(INFO) << "RGB dimensions: " << width  << "x" << height_;
-  done_ = false;
 }
 
+Movie::Movie(Movie&& movie) {
+  memcpy(reinterpret_cast<void*>(this),
+         reinterpret_cast<void*>(&movie),
+         sizeof(movie));
+  memset(reinterpret_cast<void*>(&movie), 0, sizeof(movie));
+}
 
 Graphic Movie::Next() {
   int finished = 0;   // Extract immediate next video frame.
