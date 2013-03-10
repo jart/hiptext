@@ -118,12 +118,6 @@ const Combo& QuantizeXterm256Hack1(const Pixel& color) {
   return *best;
 }
 
-winsize GetTerminalSize() {
-  winsize ws;
-  PCHECK(ioctl(0, TIOCGWINSZ, &ws) == 0);
-  return ws;
-}
-
 void PrintImageXterm256(std::ostream& os, const Graphic& graphic) {
   TermPrinter out(os);
   Pixel bg = Pixel(FLAGS_bg);
@@ -170,8 +164,6 @@ void PrintImageXterm256Hack1(std::ostream& os, const Graphic& graphic) {
 
 void PrintImageXterm256Hack2(std::ostream& os, const Graphic& graphic) {
   TermPrinter out(os);
-  Pixel bg = Pixel(FLAGS_bg);
-  int bg256 = rgb_to_xterm256(bg);
   int height = graphic.height() - graphic.height() % 2;
   for (int y = 0; y < height; y += 2) {
     for (int x = 0; x < graphic.width(); ++x) {
@@ -179,16 +171,9 @@ void PrintImageXterm256Hack2(std::ostream& os, const Graphic& graphic) {
       const Pixel& bottom = graphic.Get(x, y + 1);
       int top256 = rgb_to_xterm256(top);
       int bottom256 = rgb_to_xterm256(bottom);
-      if (!FLAGS_bgprint && (top256 == bg256 &&
-                             bottom256 == bg256)) {
-        out.SetForeground256(0);
-        out.SetBackground256(0);
-        out << FLAGS_space;
-      } else {
-        out.SetForeground256(top256);
-        out.SetBackground256(bottom256);
-        out << kUpperHalfBlock;
-      }
+      out.SetForeground256(top256);
+      out.SetBackground256(bottom256);
+      out << kUpperHalfBlock;
     }
     out.Reset();
     out << "\n";
@@ -259,16 +244,27 @@ void PrintImage(std::ostream& os, const Graphic& graphic) {
   }
 }
 
-inline void HideCursor() {
+void Sleep(int ms) {
+  timespec req = {ms / 1000, ms % 1000 * 1000000};
+  nanosleep(&req, nullptr);
+}
+
+winsize GetTerminalSize() {
+  winsize ws;
+  PCHECK(ioctl(0, TIOCGWINSZ, &ws) == 0);
+  return ws;
+}
+
+void HideCursor() {
   cout << "\x1b[?25l";
 }
 
-inline void ShowCursor() {
+void ShowCursor() {
   cout << "\x1b[?25h";
 }
 
-inline void ResetCursor() {
-  cout << "\x1b[H\n"; 
+void ResetCursor() {
+  cout << "\x1b[H\n";
 }
 
 void PrintMovie(Movie movie) {
@@ -344,7 +340,6 @@ Graphic GenerateSpectrum(int width, int height) {
   return res;
 }
 
-
 inline string GetExtension(const string& path) {
   string s = path.substr(path.find_last_of('.') + 1);
   std::transform(s.begin(), s.end(), s.begin(), tolower);
@@ -359,12 +354,6 @@ void sig_handler(int sig) {
 }
 
 int main(int argc, char** argv) {
-  // Command Validation
-  if (argc < 2) {
-    cout << "Must provide path to desired image/movie file.\n";
-    exit(1);
-  }
-  string path = argv[1];
   // if (!isatty(1))
   //   FLAGS_color = false;
   google::SetUsageMessage("hiptext [FLAGS]");
@@ -379,13 +368,19 @@ int main(int argc, char** argv) {
   if (FLAGS_xterm256_hack1)
     InitXterm256Hack1();
 
+  if (argc < 2) {
+    cout << "Must provide path to desired image/movie file.\n";
+    exit(1);
+  }
+  string path = argv[1];
+
   // Calculate output dimensions according to the terminal.
   int term_width = GetTerminalSize().ws_col;
   g_width = std::min(term_width, FLAGS_width ? FLAGS_width : term_width);
 
   signal(SIGINT, &sig_handler);
-  struct ::stat dinfo;
-  ::stat(path.data(), &dinfo);
+  struct stat dinfo;
+  stat(path.data(), &dinfo);
   if (S_ISDIR(dinfo.st_mode)) {
     // If directory, print a movie using all the frames..
     cout << "Printing a Movie from directory.\n";
@@ -396,11 +391,12 @@ int main(int argc, char** argv) {
   // Otherwise, print a single media file.
   string extension = GetExtension(path);
   cout << "Hiptexting: " << argv[1] << ". File Type: " << extension << "\n";
-  if (extension == "png") {    
+  if (extension == "png") {
     PrintImage(cout, LoadPNG(path));
-  } else if (extension == "jpg" || extension == "jpeg") {    
+  } else if (extension == "jpg" || extension == "jpeg") {
     PrintImage(cout, LoadJPEG(path));
-  } else if (extension == "mov") {
+  } else if (extension == "mov" || extension == "mp4" || extension == "flv" ||
+             extension == "avi" || extension == "mkv") {
     Movie movie = Movie(path, g_width);
     PrintMovie(movie);
   } else {
