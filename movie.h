@@ -6,22 +6,33 @@
 
 #include <string>
 
-class Graphic;
 struct AVCodec;
-struct AVFormatContext;
 struct AVCodecContext;
+struct AVFormatContext;
+struct AVFrame;
+struct SwsContext;
+
+class Graphic;
 
 class Movie {
  public:
   Movie(const std::string& path);
-  bool Initialize();
+  Movie(const std::string& path, int width);
+  void Init(const std::string& path, int width);
   Graphic Next();
 
  private:
-  std::string path_;
+  bool done_ = false;
+  int video_stream_;
+  uint8_t* buffer_;
+  AVCodec* codec_;
+  AVCodecContext* context_;
   AVFormatContext* format_;
-  // AVCodec* codec_;
-  // AVCodecContext* context_;
+  AVFrame* frame_; 
+  AVFrame* frame_rgb_; 
+  SwsContext* sws_;
+  int width_;   // Desired final size. Defaults to natural context.
+  int height_;
 };
 
 #endif  // HIPTEXT_MOVIE_H_

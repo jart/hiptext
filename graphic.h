@@ -26,7 +26,9 @@ class Graphic {
   Graphic(int width, int height, std::vector<Pixel>&& pixels)
       : width_(width),
         height_(height),
-        pixels_(std::move(pixels)) {}
+        pixels_(std::move(pixels)) {
+    CHECK(width * height == (int)pixels_.size());
+  }
 
   inline int width() const { return width_; }
   inline int height() const { return height_; }
