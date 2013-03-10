@@ -21,8 +21,6 @@ class Movie {
   void Init(const std::string& path, int width);
   Graphic Next();
 
-  // Graphic get const;
-
  private:
   bool done_ = false;
   int video_stream_;

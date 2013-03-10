@@ -59,10 +59,13 @@ DEFINE_bool(bgprint, false, "Enable explicit styling when printing characters "
             "that are nearly identical to the native terminal background.");
 DEFINE_string(space, u8"\u00a0", "The empty character to use when printing. "
               "By default this is a utf8 non-breaking space.");
+DEFINE_bool(stepthrough, false, "Whether to wait for human to press Return "
+            "between frames. Only applicablae to movie playbacks.");
 
 DEFINE_int32(width, 0, "Width of rendering. Defaults to 0, in which case it "
            "automatically detects the terminal width. If height is not "
-           "provided, it still maintains the aspect ratio.");
+           "provided, it still maintains the aspect ratio. Cannot exceed the "
+           "terminal width.");
 DEFINE_int32(height, 0, "Height of rendering. Defaults to 0, in which case it "
            "automatically maintains the aspect ratio with respect to width.");
 
@@ -84,6 +87,7 @@ struct Combo {
 // std::vector<int> g_combos_blue;
 // std::unordered_map<int, Combo> g_combos;
 std::vector<Combo> g_combos;
+int g_width;
 
 void InitXterm256Hack1() {
   for (int xterm_bg = 17; xterm_bg < 256; ++xterm_bg) {
@@ -124,6 +128,7 @@ void PrintImageXterm256(std::ostream& os, const Graphic& graphic) {
   TermPrinter out(os);
   Pixel bg = Pixel(FLAGS_bg);
   int bg256 = rgb_to_xterm256(bg);
+  LOG(INFO) << "THE THING " << graphic.width() << "x" << graphic.height();
   for (int y = 0; y < graphic.height(); ++y) {
     for (int x = 0; x < graphic.width(); ++x) {
       int code = rgb_to_xterm256(graphic.Get(x, y).Copy().Opacify(bg));
@@ -135,7 +140,7 @@ void PrintImageXterm256(std::ostream& os, const Graphic& graphic) {
       out << FLAGS_space;
     }
     out.Reset();
-    out << "\n";
+    out << "\n";  // << y << ": ";
   }
 }
 
@@ -229,11 +234,8 @@ static int AspectHeight(double new_width, double width, double height) {
 }
 
 void PrintImage(std::ostream& os, const Graphic& graphic) {
-  int term_width = GetTerminalSize().ws_col;
-  // int term_height = GetTerminalSize().ws_row;
   // Default to aspect-ratio unless |height| gflag is provided.
-  int width = std::min(graphic.width(), term_width);
-  width = FLAGS_width ? FLAGS_width : width;
+  int width = g_width;
   int height = FLAGS_height ? FLAGS_height :
       AspectHeight(width, graphic.width(), graphic.height());
 
@@ -249,7 +251,7 @@ void PrintImage(std::ostream& os, const Graphic& graphic) {
           os, graphic.BilinearScale(width, height));
     } else {
       PrintImageXterm256(
-          os, graphic.BilinearScale(width, height / 2));
+           os, graphic.BilinearScale(width, height / 2));
     }
   } else {
     PrintImageNoColor(
@@ -270,11 +272,18 @@ inline void ResetCursor() {
 }
 
 void PrintMovie(Movie movie) {
-  // for (const auto& frame : movie) {
+  HideCursor();
   while(1) {
     ResetCursor();
     PrintImage(cout, movie.Next());
+    timespec req = {0, 50000000};
+    nanosleep(&req, NULL);
+    if (FLAGS_stepthrough) {
+      string lol;
+      std::getline(std::cin, lol);
+    }
   }
+  ShowCursor();
 }
 
 // Prints all the frames from a directory.
@@ -290,6 +299,10 @@ void PrintMovie(const string& dir, const int frames) {
     cout << ss.str();
     // timespec req = {0, 500000000};
     // nanosleep(&req, NULL);
+    if (FLAGS_stepthrough) {
+      string lol;
+      std::getline(std::cin, lol);
+    }
   }
   ShowCursor();
 }
@@ -374,6 +387,10 @@ int main(int argc, char** argv) {
   if (FLAGS_xterm256_hack1)
     InitXterm256Hack1();
 
+  // Calculate output dimensions according to the terminal.
+  int term_width = GetTerminalSize().ws_col;
+  g_width = std::min(term_width, FLAGS_width ? FLAGS_width : term_width);
+
   signal(SIGINT, &sig_handler);
   struct ::stat dinfo;
   ::stat(path.data(), &dinfo);
@@ -383,7 +400,8 @@ int main(int argc, char** argv) {
     PrintMovie(path, 1000);
     return 0;
   }
-  // Otherwise, print a single image
+
+  // Otherwise, print a single media file.
   string extension = GetExtension(path);
   cout << "Hiptexting: " << argv[1] << ". File Type: " << extension << "\n";
   if (extension == "png") {    
@@ -391,7 +409,7 @@ int main(int argc, char** argv) {
   } else if (extension == "jpg" || extension == "jpeg") {    
     PrintImage(cout, LoadJPEG(path));
   } else if (extension == "mov") {
-    Movie movie = Movie(path, FLAGS_width);
+    Movie movie = Movie(path, g_width);
     PrintMovie(movie);
   } else {
     cout << "Unknown Filetype.\n";

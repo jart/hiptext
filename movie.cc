@@ -43,42 +43,40 @@ void Movie::Init(const std::string& path, int width) {
 
   // Extract codec and decoding context for RGB output.
   context_ = format_->streams[video_stream_]->codec;
+  LOG(INFO) << "Native dimensions: " << context_->width << "x" << context_->height;
+  width_ = context_->width;
+  height_ = context_->height;
   if (width) {  // Scale by aspect ratio if necessary.
-    width_ = width;   
-    height_ = width_ * context_->height / context_->width;
-  } else {  // Otherwise default to native context.
-    width_ = context_->width;
-    height_ = context_->height;
+    float scale = (float)width/(float)width_;
+    LOG(INFO) << "Scale factor: " << scale;
+    height_ *= scale;
+    // height_ = context_->height / 2;
+    width_ = width;
   }
-  CHECK(width_ > 0 && height_ > 0);
+  CHECK(width_ > 0 && height_ > 0) <<
+      "Invalid dimensions: " << width_ << "x" <<  height_;
 
-  sws_ = sws_getContext(context_->width, context_->height,
-                        context_->pix_fmt, 
-                        context_->width, context_->height,
-                        PIX_FMT_RGB24, SWS_BICUBIC,
-                        nullptr, nullptr, nullptr);
+  sws_ = sws_getContext(context_->width, context_->height, context_->pix_fmt,
+                        width_, height_,  PIX_FMT_RGB24,
+                        SWS_FAST_BILINEAR, nullptr, nullptr, nullptr);
   codec_ = avcodec_find_decoder(context_->codec_id);
   CHECK(codec_) << "Unsupported codec.\n";
   CHECK(avcodec_open2(context_, codec_, nullptr) >= 0) << "Could not open codec.\n";
-
-
-  LOG(INFO) << "CONTEXT width=" << context_->width
-            << " height=" << context_->height;
 
   frame_ = avcodec_alloc_frame(); 
   CHECK(frame_ != nullptr);
   frame_rgb_ = avcodec_alloc_frame(); 
   CHECK(frame_rgb_ != nullptr);
-  int rgb_bytes = avpicture_get_size(PIX_FMT_RGB24,
-                                context_->width, context_->height);
-  buffer_ = (uint8_t *)av_malloc(sizeof(uint8_t) * rgb_bytes);
-  LOG(INFO) << "RGB buffer: " << rgb_bytes << " bytes.";
-  int prep = avpicture_fill((AVPicture *)frame_rgb_, buffer_, PIX_FMT_RGB24,
-                            context_->width, context_->height);
-  CHECK(prep >= 0) << "Failed to prepare RGB buffer.";
 
-  LOG(INFO) << "RGB width=" << frame_rgb_->width
-            << " height=" << frame_rgb_->height;
+  // Prepare RGB buffer.
+  int rgb_bytes = avpicture_get_size(PIX_FMT_RGB24, width_, height_);
+  buffer_ = (uint8_t *)av_malloc(rgb_bytes);
+  LOG(INFO) << "RGB Buffer: " << rgb_bytes << " bytes.";
+  int prep = avpicture_fill((AVPicture *)frame_rgb_,
+                            buffer_, PIX_FMT_RGB24,
+                            width_, height_);
+  CHECK(prep >= 0) << "Failed to prepare RGB buffer.";
+  LOG(INFO) << "RGB dimensions: " << width  << "x" << height_;
   done_ = false;
 }
 
@@ -96,20 +94,36 @@ Graphic Movie::Next() {
     }
     av_free_packet(&packet);
   }
-  LOG(INFO) << "av_read_frame found a video frame. Finished=" << finished;
 
   // Convert av native format to RGB.
   sws_scale(sws_, frame_->data,
             frame_->linesize, 0, context_->height,
             frame_rgb_->data, frame_rgb_->linesize);
   // Convert RGB to hiptext representation.
+  LOG(INFO) << "av_read_frame: video frame. " << width_ << "x" << height_;
   std::vector<Pixel> pixels;
   int data_width = frame_rgb_->linesize[0];
-  for (int y = 0; y < context_->height; ++y) {
-    uint8_t* row = frame_rgb_->data[0] + y * data_width;
-    for (int x = 0; x < context_->width; x += 1) {
-      pixels.emplace_back(row[x], row[x+1], row[x+2]);
+  CHECK(data_width == 3*width_);
+  for (int y = 0; y < height_; ++y) {
+    LOG(INFO) << "Y is " << y;
+    uint8_t* row = frame_rgb_->data[0] + data_width * y;
+    int meow = 0;
+    for (int x = 0; x < data_width; x += 3) {
+      int r = row[x];
+      int g = row[x+1];
+      int b = row[x+2];
+      CHECK(r < 256);
+      CHECK(g < 256);
+      CHECK(b < 256);
+      if (r > 0) {
+//        LOG(INFO) << "Pixel[" << (x/3) << ", " << y << "] = (" <<
+///            r << ", " << g << ", " << b << ")"; 
+        meow = 1;
+      }
+      pixels.emplace_back(r, g, b);
     }
+    if (meow) LOG(INFO) << "lulz";
   }
-  return Graphic(context_->width, context_->height, std::move(pixels));
+  CHECK((int)pixels.size() == width_ * height_);
+  return Graphic(width_, height_, std::move(pixels));
 }
