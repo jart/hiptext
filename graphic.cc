@@ -47,11 +47,11 @@ Graphic Graphic::BilinearScale(int new_width, int new_height) const {
 }
 
 Graphic& Graphic::Equalize() {
-  #define C(DC) std::min(255, std::max(0, static_cast<int>((DC) * 255)))
-  const int kLevels = 256;
-  int red_hist[kLevels] = {0};
-  int green_hist[kLevels] = {0};
-  int blue_hist[kLevels] = {0};
+  const int kBins = 256;
+  #define C(DC) std::min(255, std::max(0, static_cast<int>((DC) * kBins)))
+  int red_hist[kBins] = {0};
+  int green_hist[kBins] = {0};
+  int blue_hist[kBins] = {0};
 
   // Count the occurence of each color into bins.
   for (int y = 0; y < height_; ++y) {
@@ -64,7 +64,7 @@ Graphic& Graphic::Equalize() {
   }
 
   // Accumulate the bins.
-  for (int i = 1; i < kLevels; ++i) {
+  for (int i = 1; i < kBins; ++i) {
     red_hist[i] += red_hist[i - 1];
     green_hist[i] += green_hist[i - 1];
     blue_hist[i] += blue_hist[i - 1];
