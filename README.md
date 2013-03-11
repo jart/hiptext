@@ -1,4 +1,4 @@
-# hiptext - Render Images as Text
+# hiptext - Render Images and Videos as Text
 
 ![Last Supper in Macterm](http://i.imgur.com/7TfrQsL.png)
 
