@@ -156,15 +156,15 @@ static int AspectHeight(double new_width, double width, double height) {
 
 void PrintImage(std::ostream& os, Graphic graphic) {
   // Default to aspect-ratio unless |height| gflag is provided.
+  int width = g_width;
+  int height = (FLAGS_height
+                ? FLAGS_height
+                : AspectHeight(width, graphic.width(), graphic.height()));
   if (FLAGS_equalize) {
     // graphic.ToYUV();
     graphic.Equalize();
     // graphic.FromYUV();
   }
-  int width = g_width;
-  int height = (FLAGS_height
-                ? FLAGS_height
-                : AspectHeight(width, graphic.width(), graphic.height()));
   if (FLAGS_color) {
     if (FLAGS_xterm256unicode) {
       PrintImageXterm256Unicode(os, graphic.BilinearScale(width, height));

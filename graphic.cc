@@ -84,9 +84,9 @@ Graphic& Graphic::Equalize() {
       green_level /= green_dimension;
       blue_level   = blue_hist[C(pixel.blue())] - blue_hist[0];
       blue_level  /= blue_dimension;
-      pixel.set_red(std::round(red_level * (kLevels - 1)) / 255.0);
-      pixel.set_green(std::round(green_level * (kLevels - 1)) / 255.0);
-      pixel.set_blue(std::round(blue_level * (kLevels - 1)) / 255.0);
+      pixel.set_red(red_level);
+      pixel.set_green(green_level);
+      pixel.set_blue(blue_level);
       pixel.Clamp();
     }
   }
