@@ -67,6 +67,8 @@ class Graphic {
   Graphic& Equalize();
   Graphic& ToYUV();
   Graphic& FromYUV();
+  Graphic& ToHSV();
+  Graphic& FromHSV();
 
  private:
   int width_;

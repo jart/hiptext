@@ -3,6 +3,7 @@
 
 #include "graphic.h"
 #include <cmath>
+#include <algorithm>
 #include <iostream>
 #include <glog/logging.h>
 #include "pixel.h"
@@ -45,9 +46,8 @@ Graphic Graphic::BilinearScale(int new_width, int new_height) const {
   return res;
 }
 
-// Buffer overflow risk if you don't Clamp() pixels before calling.
 Graphic& Graphic::Equalize() {
-  #define C(DC) static_cast<int>((DC) * 255)
+  #define C(DC) std::min(255, std::max(0, static_cast<int>((DC) * 255)))
   const int kLevels = 256;
   int red_hist[kLevels] = {0};
   int green_hist[kLevels] = {0};
@@ -87,6 +87,7 @@ Graphic& Graphic::Equalize() {
       pixel.set_red(std::round(red_level * (kLevels - 1)) / 255.0);
       pixel.set_green(std::round(green_level * (kLevels - 1)) / 255.0);
       pixel.set_blue(std::round(blue_level * (kLevels - 1)) / 255.0);
+      pixel.Clamp();
     }
   }
 
@@ -128,6 +129,24 @@ Graphic& Graphic::FromYUV() {
   for (int y = 0; y < height_; ++y) {
     for (int x = 0; x < width_; ++x) {
       Get(x, y).FromYUV();
+    }
+  }
+  return *this;
+}
+
+Graphic& Graphic::ToHSV() {
+  for (int y = 0; y < height_; ++y) {
+    for (int x = 0; x < width_; ++x) {
+      Get(x, y).ToHSV();
+    }
+  }
+  return *this;
+}
+
+Graphic& Graphic::FromHSV() {
+  for (int y = 0; y < height_; ++y) {
+    for (int x = 0; x < width_; ++x) {
+      Get(x, y).FromHSV();
     }
   }
   return *this;

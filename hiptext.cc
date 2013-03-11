@@ -157,9 +157,9 @@ static int AspectHeight(double new_width, double width, double height) {
 void PrintImage(std::ostream& os, Graphic graphic) {
   // Default to aspect-ratio unless |height| gflag is provided.
   if (FLAGS_equalize) {
-    graphic.ToYUV();
+    // graphic.ToYUV();
     graphic.Equalize();
-    graphic.FromYUV();
+    // graphic.FromYUV();
   }
   int width = g_width;
   int height = (FLAGS_height
