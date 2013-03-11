@@ -41,6 +41,7 @@ Graphic LoadPNG(const std::string& path) {
   png_read_image(png, rows.get());
   free(png);
   free(info);
+
   PCHECK(fclose(fp) == 0) << path;
   std::vector<Pixel> pixels;
   for (int y = 0; y < height; ++y) {

@@ -9,7 +9,7 @@
 #include <vector>
 #include <glog/logging.h>
 
-class Pixel;
+#include "pixel.h"
 
 class Graphic {
  public:
