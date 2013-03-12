@@ -16,14 +16,17 @@ struct SwsContext;
 
 class Movie {
  public:
-  explicit Movie(const std::string& path) : Movie(path, 0) {}
+  explicit Movie(const std::string& path);
   ~Movie();
-  Movie(const std::string& path, int width);
   Movie(Movie&& movie);
   Movie(const Movie& movie) = delete;
   void operator=(const Movie& movie) = delete;
 
+  void PrepareRGB(int width, int height);
   Graphic Next();
+
+  inline int width() const { return width_; }
+  inline int height() const { return height_; }
   inline bool done() const { return done_; }
 
   // Make C++11 range-based loops work.
@@ -39,7 +42,7 @@ class Movie {
   static void InitializeMain();
 
  private:
-  bool done_ = false;
+  bool done_ = false;  // True when media is complete.
   int video_stream_;
   uint8_t* buffer_;
   AVCodec* codec_;
