@@ -1,13 +1,13 @@
 // hiptext - Image to Text Converter
 // By Justine Tunney
 
-#include <unistd.h>
-#include <sys/stat.h>
-#include <sys/types.h>
+// #include <unistd.h>
+// #include <sys/stat.h>
+// #include <sys/types.h>
 #include <signal.h>
 // #include <thread>
 
-#include <algorithm>
+// #include <algorithm>
 #include <cassert>
 #include <cstdio>
 #include <fstream>
@@ -15,12 +15,8 @@
 #include <iterator>
 #include <locale>
 #include <memory>
-#include <numeric>
-#include <sstream>
 #include <string>
-#include <unordered_map>
-#include <unordered_set>
-#include <utility>
+#include <sstream>
 
 #include <gflags/gflags.h>
 #include <glog/logging.h>
@@ -69,7 +65,6 @@ void PrintImageXterm256(std::ostream& os, const Graphic& graphic) {
   TermPrinter out(os);
   Pixel bg = Pixel(FLAGS_bg);
   int bg256 = rgb_to_xterm256(bg);
-  LOG(INFO) << "THE THING " << graphic.width() << "x" << graphic.height();
   for (int y = 0; y < graphic.height(); ++y) {
     for (int x = 0; x < graphic.width(); ++x) {
       int code = rgb_to_xterm256(graphic.Get(x, y).Copy().Opacify(bg));
@@ -168,7 +163,7 @@ int main(int argc, char** argv) {
   InitFont();
   Movie::InitializeMain();
 
-  RenderAlgo algo;
+  RenderAlgorithm algo;
   bool duo_pixel = false;
   if (FLAGS_color) {
     if (FLAGS_xterm256unicode) {
@@ -183,7 +178,7 @@ int main(int argc, char** argv) {
   } else {
     algo = PrintImageNoColor;
   }
-  Artiste artiste(cout, algo, duo_pixel);
+  Artiste artiste(std::cout, algo, duo_pixel);
   g_artiste_ptr = &artiste;
 
   // Did they specify an option that requires no args?

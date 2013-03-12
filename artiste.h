@@ -5,17 +5,18 @@
 #define HIPTEXT_ARTISTE_H_
 
 #include <functional>
-#include <iostream>
-#include <string>
+#include <ostream>
+
+#include "unicode.h"
 
 class Movie;
 class Graphic;
 
-typedef std::function<void(std::ostream&, const Graphic&)> RenderAlgo;
+using RenderAlgorithm = std::function<void(std::ostream&, const Graphic&)>;
 
 class Artiste {  // The one who lives in your terminal.
  public:
-  explicit Artiste(std::ostream& output, RenderAlgo algorithm, bool duopixel);
+  Artiste(std::ostream& output, RenderAlgorithm algorithm, bool duopixel);
   ~Artiste();
   // The Artiste refuses such mimicry. (As expected of a hippy.)
   Artiste(const Artiste& a) = delete;
@@ -38,7 +39,7 @@ class Artiste {  // The one who lives in your terminal.
   void ComputeDimensions(double media_ratio);
 
   std::ostream& output_;
-  RenderAlgo algorithm_;
+  RenderAlgorithm algorithm_;
   bool duo_pixel_;  // Some algorithms improve vertical resolution.
 
   int term_width_;
