@@ -1,13 +1,13 @@
 // hiptext - Image to Text Converter
 // By Justine Tunney
 
-#include <unistd.h>
-#include <sys/ioctl.h>
-#include <sys/stat.h>
-#include <sys/types.h>
+// #include <unistd.h>
+// #include <sys/stat.h>
+// #include <sys/types.h>
 #include <signal.h>
+// #include <thread>
 
-#include <algorithm>
+// #include <algorithm>
 #include <cassert>
 #include <cstdio>
 #include <fstream>
@@ -15,27 +15,23 @@
 #include <iterator>
 #include <locale>
 #include <memory>
-#include <numeric>
-#include <sstream>
 #include <string>
-#include <unordered_map>
-#include <unordered_set>
-#include <utility>
+#include <sstream>
 
 #include <gflags/gflags.h>
 #include <glog/logging.h>
 
+#include "artiste.h"
 #include "charquantizer.h"
 #include "font.h"
-#include "graphic.h"
 #include "jpeg.h"
-#include "macterm.h"
-#include "movie.h"
 #include "pixel.h"
 #include "png.h"
-#include "unicode.h"
+#include "macterm.h"
+#include "movie.h"
 #include "xterm256.h"
 #include "termprinter.h"
+#include "unicode.h"
 
 using std::cout;
 using std::string;
@@ -58,31 +54,17 @@ DEFINE_bool(bgprint, false, "Enable explicit styling when printing characters "
             "that are nearly identical to the native terminal background");
 DEFINE_string(space, u8"\u00a0", "The empty character to use when printing. "
               "By default this is a utf8 non-breaking space");
-DEFINE_bool(stepthrough, false, "Whether to wait for human to press Return "
-            "between frames. Only applicablae to movie playbacks");
-DEFINE_int32(width, 0, "Width of rendering. Defaults to 0, in which case it "
-           "automatically detects the terminal width. If height is not "
-           "provided, it still maintains the aspect ratio. Cannot exceed the "
-           "terminal width");
-DEFINE_int32(height, 0, "Height of rendering. Defaults to 0, in which case it "
-           "automatically maintains the aspect ratio with respect to width");
-DEFINE_bool(equalize, false, "Use the histogram equalizer filter. You should "
-            "use this when your image looks 'washed out' or grey when rendered "
-            "in hiptext");
 DEFINE_bool(spectrum, false, "Show color spectrum graph");
 
 static const wchar_t kUpperHalfBlock = L'\u2580';
 static const wchar_t kLowerHalfBlock = L'\u2584';
 static const wchar_t kFullBlock = L'\u2588';
-
-static int g_width;
-static int g_cursor_saved;
+Artiste* g_artiste_ptr;
 
 void PrintImageXterm256(std::ostream& os, const Graphic& graphic) {
   TermPrinter out(os);
   Pixel bg = Pixel(FLAGS_bg);
   int bg256 = rgb_to_xterm256(bg);
-  LOG(INFO) << "THE THING " << graphic.width() << "x" << graphic.height();
   for (int y = 0; y < graphic.height(); ++y) {
     for (int x = 0; x < graphic.width(); ++x) {
       int code = rgb_to_xterm256(graphic.Get(x, y).Copy().Opacify(bg));
@@ -150,117 +132,9 @@ void PrintImageNoColor(std::ostream& os, const Graphic& graphic) {
   }
 }
 
-static int AspectHeight(double new_width, double width, double height) {
-  return new_width / width * height;
-}
-
-void PrintImage(std::ostream& os, Graphic graphic) {
-  // Default to aspect-ratio unless |height| gflag is provided.
-  int width = g_width;
-  int height = (FLAGS_height
-                ? FLAGS_height
-                : AspectHeight(width, graphic.width(), graphic.height()));
-  if (FLAGS_equalize) {
-    // graphic.ToYUV();
-    graphic.Equalize();
-    // graphic.FromYUV();
-  }
-  if (FLAGS_color) {
-    if (FLAGS_xterm256unicode) {
-      PrintImageXterm256Unicode(os, graphic.BilinearScale(width, height));
-    } else if (FLAGS_macterm) {
-      PrintImageMacterm(os, graphic.BilinearScale(width, height));
-    } else {
-      PrintImageXterm256(os, graphic.BilinearScale(width, height / 2));
-    }
-  } else {
-    PrintImageNoColor(os, graphic.BilinearScale(width, height / 2));
-  }
-}
-
 void Sleep(int ms) {
   timespec req = {ms / 1000, ms % 1000 * 1000000};
   nanosleep(&req, nullptr);
-}
-
-winsize GetTerminalSize() {
-  winsize ws;
-  PCHECK(ioctl(0, TIOCGWINSZ, &ws) == 0);
-  return ws;
-}
-
-void HideCursor() {
-  cout << "\x1b[s";     // ANSI save cursor position.
-  cout << "\x1b[?25l";  // ANSI make cursor invisible.
-  g_cursor_saved = true;
-}
-
-void ShowCursor() {
-  g_cursor_saved = false;
-  cout << "\x1b[u";     // ANSI restore cursor position.
-  cout << "\x1b[?25h";  // ANSI make cursor visible.
-}
-
-void ResetCursor() {
-  cout << "\x1b[H";     // ANSI put cursor in top left.
-}
-
-void PrintMovie(Movie movie) {
-  HideCursor();
-  for (auto graphic : movie) {
-    ResetCursor();
-    PrintImage(cout, std::move(graphic));
-    if (FLAGS_stepthrough) {
-      string lol;
-      std::getline(std::cin, lol);
-    }
-  }
-  ShowCursor();
-}
-
-Graphic GenerateSpectrum(int width, int height) {
-  int bar_width = static_cast<double>(width) * 0.05;
-  int spec_width = width - bar_width * 4;
-  double hh = static_cast<double>(height) / 2.0;
-  Graphic res(width, height);
-  for (int y = 0; y < height; ++y) {
-    double fy = static_cast<double>(y);
-
-    // Render the large color spectrum.
-    for (int x = 0; x < spec_width; ++x) {
-      double fx = static_cast<double>(x);
-      res.Get(x, y) = Pixel(
-          fx / spec_width,
-          (y > hh) ? 1.0 : fy / (hh),
-          (y < hh) ? 1.0 : 1.0 - (fy - (hh)) / (hh)).FromHSV();
-    }
-
-    // Render the grey bar.
-    int offset = spec_width;
-    for (int x = 0; x < bar_width; ++x) {
-      res.Get(x + offset, y) =
-          Pixel(0.0, 0.0, fy / height).FromHSV();
-    }
-
-    // Render the red/white gradient bar.
-    offset += bar_width;
-    for (int x = 0; x < bar_width; ++x) {
-      res.Get(x + offset, y) = Pixel(1.0, fy / height, fy / height);
-    }
-
-    // Render the green/white gradient bar.
-    offset += bar_width;
-    for (int x = 0; x < bar_width; ++x) {
-      res.Get(x + offset, y) = Pixel(fy / height, 1.0, fy / height);
-    }
-
-    // Render the blue/white gradient bar.
-    offset += bar_width;
-    for (int x = 0; x < bar_width; ++x) {
-      res.Get(x + offset, y) = Pixel(fy / height, fy / height, 1.0);
-    }
-  }
-  return res;
 }
 
 inline string GetExtension(const string& path) {
@@ -270,9 +144,7 @@ inline string GetExtension(const string& path) {
 }
 
 void OnCtrlC(int /*signal*/) {
-  if (g_cursor_saved) {
-    ShowCursor();
-  }
+  g_artiste_ptr->CleanUp();
   exit(0);
 }
 
@@ -291,14 +163,27 @@ int main(int argc, char** argv) {
   InitFont();
   Movie::InitializeMain();
 
-  // Calculate output dimensions according to the terminal.
-  int term_width = GetTerminalSize().ws_col;
-  g_width = std::min(term_width, FLAGS_width ? FLAGS_width : term_width);
+  RenderAlgorithm algo;
+  bool duo_pixel = false;
+  if (FLAGS_color) {
+    if (FLAGS_xterm256unicode) {
+      algo = PrintImageXterm256Unicode;
+      duo_pixel = true;
+    } else if (FLAGS_macterm) {
+      algo = PrintImageMacterm;
+      duo_pixel = true;
+    } else {
+      algo = PrintImageXterm256;
+    }
+  } else {
+    algo = PrintImageNoColor;
+  }
+  Artiste artiste(std::cout, algo, duo_pixel);
+  g_artiste_ptr = &artiste;
 
   // Did they specify an option that requires no args?
   if (FLAGS_spectrum) {
-    PrintImage(cout, GenerateSpectrum(GetTerminalSize().ws_col,
-                                      GetTerminalSize().ws_row * 2 - 2));
+    artiste.GenerateSpectrum();
     exit(0);
   }
 
@@ -310,23 +195,21 @@ int main(int argc, char** argv) {
     exit(1);
   }
   string path = argv[1];
-
-  // Otherwise, print a single media file.
   string extension = GetExtension(path);
-  LOG(INFO) << "Hiptexting: " << argv[1];
-  LOG(INFO) << "File Type: " << extension;
   if (extension == "png") {
-    PrintImage(cout, LoadPNG(path));
+    artiste.PrintImage(LoadPNG(path));
   } else if (extension == "jpg" || extension == "jpeg") {
-    PrintImage(cout, LoadJPEG(path));
+    artiste.PrintImage(LoadJPEG(path));
   } else if (extension == "mov" || extension == "mp4" || extension == "flv" ||
              extension == "avi" || extension == "mkv") {
-    PrintMovie(Movie(path, g_width));
+    artiste.PrintMovie(Movie(path));
   } else {
     fprintf(stderr, "Unknown Filetype: %s\n", extension.data());
     exit(1);
   }
 
+  // std::thread t(Render, path);
+  // t.join();
   exit(0);
 }
 

@@ -26,6 +26,7 @@ CXXFLAGS += -I/usr/include/x86_64-linux-gnu/c++/4.7
 endif
 
 SOURCES = \
+	artiste.o \
 	charquantizer.o \
 	font.o \
 	graphic.o \
