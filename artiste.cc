@@ -97,15 +97,12 @@ void Artiste::PrintMovie(Movie movie) {
   movie.PrepareRGB(width_, height_);
 
   HideCursor();
-  int n = 0;
   for (auto graphic : movie) {
-    if (++n % 2) {
-      ResetCursor();
-      algorithm_(output_, std::move(graphic));
-      if (FLAGS_stepthrough) {
-        string lulz;
-        std::getline(std::cin, lulz);
-      }
+    ResetCursor();
+    algorithm_(output_, std::move(graphic));
+    if (FLAGS_stepthrough) {
+      string lulz;
+      std::getline(std::cin, lulz);
     }
   }
   ShowCursor();
