@@ -33,12 +33,12 @@ Artiste::Artiste(std::ostream& output, RenderAlgorithm algorithm, bool duo_pixel
     : output_(output), algorithm_(algorithm), duo_pixel_(duo_pixel) {
   winsize ws;
   PCHECK(ioctl(0, TIOCGWINSZ, &ws) == 0);
-  // Users' concept of a "pixel" shall be as square as possible. 
+  // Users' concept of a "pixel" shall be as square as possible.
   // Therefore, double ws_row since characters approximate ~2:1rectangles.
   term_height_ = ws.ws_row * 2;
   term_width_ = ws.ws_col;
 
-  // If user provides *both* FLAGS_width and FLAGS_height, remember their 
+  // If user provides *both* FLAGS_width and FLAGS_height, remember their
   // desired ratio.
   if (FLAGS_width && FLAGS_height ) {
     user_ratio_ = RatioOf(FLAGS_width, FLAGS_height);
@@ -46,7 +46,7 @@ Artiste::Artiste(std::ostream& output, RenderAlgorithm algorithm, bool duo_pixel
   }
 }
 
-Artiste::~Artiste() { 
+Artiste::~Artiste() {
   CleanUp();
 }
 
@@ -74,10 +74,11 @@ void Artiste::ComputeDimensions(double media_ratio) {
   height_ = (int)height / (duo_pixel_ ? 1 : 2);
 
   LOG(INFO) << "Terminal Resolution: " << term_width_ << "x" << term_height_;
-  LOG(INFO) << "Final Resolution (pixel-agnostic): " << width_ << "x" << height_;
+  LOG(INFO) << "Final Resolution (pixel-agnostic): " << width_ << "x"
+            << height_;
 }
 
-void Artiste::PrintImage(Graphic graphic) {  
+void Artiste::PrintImage(Graphic graphic) {
   // Image decoders biject 1:1 to Hiptext's raw RGB representation,
   // so must be scaled once more prior to rendering.
   ComputeDimensions(RatioOf(graphic.width(), graphic.height()));
@@ -90,18 +91,21 @@ void Artiste::PrintImage(Graphic graphic) {
 }
 
 void Artiste::PrintMovie(Movie movie) {
-  // Movie files sws_scale to size in real-time, so the final 
+  // Movie files sws_scale to size in real-time, so the final
   // dimensions should be precomputed to avoid redundant scaling.
   ComputeDimensions(RatioOf(movie.width(), movie.height()));
   movie.PrepareRGB(width_, height_);
 
   HideCursor();
+  int n = 0;
   for (auto graphic : movie) {
-    ResetCursor();
-    algorithm_(output_, std::move(graphic));
-    if (FLAGS_stepthrough) {
-      string lulz;
-      std::getline(std::cin, lulz);
+    if (++n % 2) {
+      ResetCursor();
+      algorithm_(output_, std::move(graphic));
+      if (FLAGS_stepthrough) {
+        string lulz;
+        std::getline(std::cin, lulz);
+      }
     }
   }
   ShowCursor();

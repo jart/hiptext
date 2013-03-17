@@ -2,17 +2,20 @@
 // By Justine Tunney
 
 #include "xterm256.h"
-#include "pixel.h"
+#include <gflags/gflags.h>
 #include <glog/logging.h>
+#include "pixel.h"
 
-static uint8_t g_cube_steps[] = { 0x00, 0x5F, 0x87, 0xAF, 0xD7, 0xFF };
+DEFINE_bool(fast, false, "Use O(1) xterm256 aproximate color quantizer.");
+
+static const uint8_t g_cube_steps[] = {0, 95, 135, 175, 215, 255};
 
 // These colors vary wildly based on the palette of the terminal emulator.
 static Pixel g_basic16[] = {
-  {   0,   0,   0 }, { 205,   0,   0 }, {  0, 205,   0 }, { 205, 205,   0 },
-  {   0,   0, 238 }, { 205,   0, 205 }, {  0, 205, 205 }, { 229, 229, 229 },
-  { 127, 127, 127 }, { 255,   0,   0 }, {  0, 255,   0 }, { 255, 255,   0 },
-  {  92,  92, 255 }, { 255,   0, 255 }, {  0, 255, 255 }, { 255, 255, 255 },
+  {  0,   0,   0}, {205,   0,   0}, {  0, 205,   0}, {205, 205,   0},
+  {  0,   0, 238}, {205,   0, 205}, {  0, 205, 205}, {229, 229, 229},
+  {127, 127, 127}, {255,   0,   0}, {  0, 255,   0}, {255, 255,   0},
+  { 92,  92, 255}, {255,   0, 255}, {  0, 255, 255}, {255, 255, 255},
 };
 
 uint8_t rgb_to_xterm(const Pixel& pix, int begin, int end) {
@@ -36,43 +39,47 @@ uint8_t rgb_to_xterm16(const Pixel& pix) {
   return rgb_to_xterm(pix, 0, 16);
 }
 
-// uint8_t rgb_to_xterm256(const Pixel& pix) {
-//   return rgb_to_xterm(pix, 16, 256);
-// }
-
-inline int get_step(uint8_t c) {
-  if (c < 95) {
+static int unstep(uint8_t c) {
+  if (c <= 52) {
     return 0;
+  } else if (c <= 115) {
+    return 1;
+  } else if (c <= 155) {
+    return 2;
+  } else if (c <= 195) {
+    return 3;
+  } else if (c <= 235) {
+    return 4;
   } else {
-    return (c - 95) / 40;
+    return 5;
   }
 }
 
 uint8_t rgb_to_xterm256(const Pixel& pix) {
-  // Grayscale colors.
-  if (pix.red() == pix.green() && pix.red() == pix.blue()) {
-    // Thanks Wolfram Alpha: solve c = 8 + (n - 232) * 10, n
-    return 8 + (pix.red() - 232) * 10;
-  } else {
-    return g_xterm_reverse[get_step(pix.red())]
-                          [get_step(pix.green() / 6)]
-                          [get_step(pix.blue() / 16)];
+  if (!FLAGS_fast) {
+    return rgb_to_xterm(pix, 16, 256);
   }
-}
-
-const Pixel& xterm_to_rgb(int code) {
-  DCHECK_GE(code, 0);
-  DCHECK_LT(code, 256);
-  return g_xterm[code];
-}
-
-void PrintXterm256() {
-  for (int n = 0; n < 256; n++) {
-    Pixel pix = g_xterm[n];
-    printf("\x1b[48;5;%dm", n);
-    printf("%d = (%0.2f, %0.2f, %0.2f)", n, pix.red(), pix.green(), pix.blue());
-    printf("\x1b[0m\n");
+  int r = static_cast<int>(pix.red()   * 255);
+  int g = static_cast<int>(pix.green() * 255);
+  int b = static_cast<int>(pix.blue()  * 255);
+  CHECK(0 <= r && r <= 255);
+  CHECK(0 <= g && g <= 255);
+  CHECK(0 <= b && b <= 255);
+  // Determine approximate grayscale value.
+  int gr = (r - 3) / 10;
+  int gg = (g - 3) / 10;
+  int gb = (b - 3) / 10;
+  if (gr == gg && gg == gb) {
+    if (gr == -1) {
+      return 16;
+    } else if (gr > 23) {
+      return 231;
+    } else {
+      return 232 + gr;
+    }
   }
+  // Otherwise calculate color value.
+  return g_xterm_reverse[unstep(r)][unstep(g)][unstep(b)];
 }
 
 static constexpr Pixel CalculateXtermToRGB(uint8_t xcolor) {
@@ -87,7 +94,7 @@ static constexpr Pixel CalculateXtermToRGB(uint8_t xcolor) {
                      8 + (xcolor - 232) * 0x0A)));
 }
 
-uint8_t g_xterm_reverse[6][6][6] = {
+const uint8_t g_xterm_reverse[6][6][6] = {
   {{ 16,  17,  18,  19,  20,  21},
    { 22,  23,  24,  25,  26,  27},
    { 28,  29,  30,  31,  32,  33},
@@ -100,7 +107,8 @@ uint8_t g_xterm_reverse[6][6][6] = {
    { 70,  71,  72,  73,  74,  75},
    { 76,  77,  78,  79,  80,  81},
    { 82,  83,  84,  85,  86,  87}},
-  {{ 94,  95,  96,  97,  98,  99},
+  {{ 88,  89,  90,  91,  92,  93},
+   { 94,  95,  96,  97,  98,  99},
    {100, 101, 102, 103, 104, 105},
    {106, 107, 108, 109, 110, 111},
    {112, 113, 114, 115, 116, 117},
@@ -125,7 +133,7 @@ uint8_t g_xterm_reverse[6][6][6] = {
    {226, 227, 228, 229, 230, 231}},
 };
 
-Pixel g_xterm[256] = {
+const Pixel g_xterm[256] = {
   CalculateXtermToRGB(0),
   CalculateXtermToRGB(1),
   CalculateXtermToRGB(2),

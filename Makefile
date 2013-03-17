@@ -8,10 +8,12 @@
 #  - sudo make uninstall           # Kick hiptext out of your house :(
 #  - make clean                    # Delete all generated files.
 #  - make lint                     # Check for C++ style errors.
-#  - CXXFLAGS="-g -O3 -DNDEBUG" make  # Create a faster build.
 #  - make -pn | less               # View implicit make rules and variables.
+#
+# Create an optimized build:
+#   CXXFLAGS="-O3 -flto -DNDEBUG" make
 
-CXX          = clang++
+CXX          = g++-4.7
 LINK.o       = $(LINK.cc)
 PREFIX      ?= /usr/local
 TARGET_ARCH ?= -march=native
@@ -21,9 +23,9 @@ LDLIBS      += -lm -lglog -lgflags -lpng -ljpeg
 LDLIBS      += -lavcodec -lavformat -lavutil -lswscale
 LDLIBS      += $(shell freetype-config --libs)
 
-ifeq ($(shell hostname),bean)
-CXXFLAGS += -I/usr/include/x86_64-linux-gnu/c++/4.7
-endif
+# ifeq ($(shell hostname),bean)
+# CXXFLAGS += -I/usr/include/x86_64-linux-gnu/c++/4.7
+# endif
 
 SOURCES = \
 	artiste.o \
@@ -68,9 +70,8 @@ lint:
 %.cc: %.rl
 	ragel -o $@ $<
 
-%.S: %.cc
-	clang++ $(CXXFLAGS) -g -S -o $@ $<
-#	$(COMPILE.cc) -g -S -fverbose-asm $(OUTPUT_OPTION) $<
+%.S: %.o
+	objdump -d -M att -Sl --no-show-raw-insn $< >$@
 
 # Flag overrides for individual targets.
 pixel_parse.o: CXXFLAGS := $(filter-out -MD,$(CXXFLAGS))

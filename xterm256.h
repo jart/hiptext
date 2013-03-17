@@ -8,13 +8,11 @@
 
 class Pixel;
 
-extern Pixel g_xterm[256];
-extern uint8_t g_xterm_reverse[6][6][6];
-const Pixel& xterm_to_rgb(int code);
+extern const Pixel g_xterm[256];
+extern const uint8_t g_xterm_reverse[6][6][6];
 uint8_t rgb_to_xterm(const Pixel& pix, int begin, int end);
 uint8_t rgb_to_xterm16(const Pixel& pix);
 uint8_t rgb_to_xterm256(const Pixel& pix);
-void PrintXterm256();
 
 #endif  // HIPTEXT_XTERM256_H_
 
