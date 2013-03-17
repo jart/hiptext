@@ -9,6 +9,7 @@
 class Pixel;
 
 extern Pixel g_xterm[256];
+extern uint8_t g_xterm_reverse[6][6][6];
 const Pixel& xterm_to_rgb(int code);
 uint8_t rgb_to_xterm(const Pixel& pix, int begin, int end);
 uint8_t rgb_to_xterm16(const Pixel& pix);
