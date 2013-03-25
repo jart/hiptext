@@ -95,10 +95,14 @@ void Artiste::PrintMovie(Movie movie) {
   // dimensions should be precomputed to avoid redundant scaling.
   ComputeDimensions(RatioOf(movie.width(), movie.height()));
   movie.PrepareRGB(width_, height_);
-
   HideCursor();
   for (auto graphic : movie) {
     ResetCursor();
+    if (FLAGS_equalize) {
+      // graphic.ToYUV();
+      graphic.Equalize();
+      // graphic.FromYUV();
+    }
     algorithm_(output_, std::move(graphic));
     if (FLAGS_stepthrough) {
       string lulz;

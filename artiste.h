@@ -27,8 +27,8 @@ class Artiste {  // The one who lives in your terminal.
 
   void GenerateSpectrum();
 
-  inline int term_width() { return term_width_; }
-  inline int term_height() { return term_height_; }
+  inline int term_width() const { return term_width_; }
+  inline int term_height() const { return term_height_; }
 
   void ShowCursor();
   void HideCursor();
@@ -47,7 +47,7 @@ class Artiste {  // The one who lives in your terminal.
   double user_ratio_ = 0;
   double true_ratio_ = 0;
   int width_ = -1;  // Final output dimensions.
-  int height_ = -1;  
+  int height_ = -1;
 
   bool cursor_saved_ = false;
 };

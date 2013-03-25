@@ -48,18 +48,20 @@ Graphic Graphic::BilinearScale(int new_width, int new_height) const {
 
 Graphic& Graphic::Equalize() {
   const int kBins = 256;
-  #define C(DC) std::min(255, std::max(0, static_cast<int>((DC) * kBins)))
   int red_hist[kBins] = {0};
   int green_hist[kBins] = {0};
   int blue_hist[kBins] = {0};
+  auto convert = [](double v) {
+    return std::min(255, std::max(0, static_cast<int>(v * kBins)));
+  };
 
   // Count the occurence of each color into bins.
   for (int y = 0; y < height_; ++y) {
     for (int x = 0; x < width_; ++x) {
       const Pixel& pixel = Get(x, y);
-      ++red_hist[C(pixel.red())];
-      ++green_hist[C(pixel.green())];
-      ++blue_hist[C(pixel.blue())];
+      ++red_hist[convert(pixel.red())];
+      ++green_hist[convert(pixel.green())];
+      ++blue_hist[convert(pixel.blue())];
     }
   }
 
@@ -78,11 +80,11 @@ Graphic& Graphic::Equalize() {
     for (int x = 0; x < width_; ++x) {
       Pixel& pixel = Get(x, y);
       double red_level, green_level, blue_level;
-      red_level    = red_hist[C(pixel.red())] - red_hist[0];
+      red_level    = red_hist[convert(pixel.red())] - red_hist[0];
       red_level   /= red_dimension;
-      green_level  = green_hist[C(pixel.green())] - green_hist[0];
+      green_level  = green_hist[convert(pixel.green())] - green_hist[0];
       green_level /= green_dimension;
-      blue_level   = blue_hist[C(pixel.blue())] - blue_hist[0];
+      blue_level   = blue_hist[convert(pixel.blue())] - blue_hist[0];
       blue_level  /= blue_dimension;
       pixel.set_red(red_level);
       pixel.set_green(green_level);
