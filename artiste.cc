@@ -26,10 +26,12 @@ DEFINE_bool(stepthrough, false, "Whether to wait for human to press Return "
             "between frames. Only applicable to movie playbacks");
 
 inline double RatioOf(int width, int height) {
-  return (double)width / (double)height;
+  return static_cast<double>(width) / static_cast<double>(height);
 }
 
-Artiste::Artiste(std::ostream& output, RenderAlgorithm algorithm, bool duo_pixel)
+Artiste::Artiste(std::ostream& output,
+                 RenderAlgorithm algorithm,
+                 bool duo_pixel)
     : output_(output), algorithm_(algorithm), duo_pixel_(duo_pixel) {
   winsize ws;
   PCHECK(ioctl(0, TIOCGWINSZ, &ws) == 0);
@@ -40,7 +42,7 @@ Artiste::Artiste(std::ostream& output, RenderAlgorithm algorithm, bool duo_pixel
 
   // If user provides *both* FLAGS_width and FLAGS_height, remember their
   // desired ratio.
-  if (FLAGS_width && FLAGS_height ) {
+  if (FLAGS_width && FLAGS_height) {
     user_ratio_ = RatioOf(FLAGS_width, FLAGS_height);
     LOG(INFO) << "User enforced ratio: " << user_ratio_;
   }
@@ -70,8 +72,8 @@ void Artiste::ComputeDimensions(double media_ratio) {
   // Apply ratio both ways to ensure a fit.
   height = std::min(height, width / true_ratio_);
   width = std::min(width, height * true_ratio_);
-  width_ = (int)width;
-  height_ = (int)height / (duo_pixel_ ? 1 : 2);
+  width_ = static_cast<int>(width);
+  height_ = static_cast<int>(height) / (duo_pixel_ ? 1 : 2);
 
   LOG(INFO) << "Terminal Resolution: " << term_width_ << "x" << term_height_;
   LOG(INFO) << "Final Resolution (pixel-agnostic): " << width_ << "x"

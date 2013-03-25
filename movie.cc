@@ -19,14 +19,14 @@ Movie::Movie(const std::string& path) {
   format_ = avformat_alloc_context();
 
   // Fetch basic metadata.
-  CHECK(avformat_open_input(&format_, path.data(), nullptr, nullptr) == 0);
-  CHECK(avformat_find_stream_info(format_, nullptr) >= 0);
+  CHECK_EQ(0, avformat_open_input(&format_, path.data(), nullptr, nullptr));
+  CHECK_GE(avformat_find_stream_info(format_, nullptr), 0);
   av_dump_format(format_, 0, path.data(), false);
 
   // Make sure it contains a video stream.
   video_stream_ = av_find_best_stream(
       format_, AVMEDIA_TYPE_VIDEO, -1, -1, &codec_, 0);
-  CHECK(video_stream_ >= 0) << "Couldn't find a video stream in: " << path;
+  CHECK_GE(video_stream_, 0) << "Couldn't find a video stream in: " << path;
   context_ = format_->streams[video_stream_]->codec;
   LOG(INFO) << "Native dimensions: " << context_->width << "x"
             << context_->height;
@@ -57,7 +57,7 @@ void Movie::PrepareRGB(int width, int height) {
                         nullptr, nullptr, nullptr);
   CHECK(codec_ = avcodec_find_decoder(context_->codec_id))
       << "Unsupported codec.\n";
-  CHECK(avcodec_open2(context_, codec_, nullptr) >= 0)
+  CHECK_GE(avcodec_open2(context_, codec_, nullptr), 0)
       << "Could not open codec.\n";
 
   // Allocate Raw + RGB frame buffers.
@@ -68,7 +68,7 @@ void Movie::PrepareRGB(int width, int height) {
   LOG(INFO) << "RGB Buffer: " << rgb_bytes << " bytes.";
   int prep = avpicture_fill(reinterpret_cast<AVPicture*>(frame_rgb_),
                             buffer_, PIX_FMT_RGB24, width_, height_);
-  CHECK(prep >= 0) << "Failed to prepare RGB buffer.";
+  CHECK_GE(prep, 0) << "Failed to prepare RGB buffer.";
   LOG(INFO) << "RGB dimensions: " << width_  << "x" << height_;
 }
 
@@ -111,7 +111,7 @@ Graphic Movie::Next() {
       pixels.emplace_back(row[x], row[x + 1], row[x + 2]);
     }
   }
-  CHECK((int)pixels.size() == width_ * height_);
+  CHECK(static_cast<int>(pixels.size()) == width_ * height_);
   return Graphic(width_, height_, std::move(pixels));
 }
 

@@ -65,13 +65,11 @@ lint:
 		     | grep -v 'readability/streams' \
 		     | grep -v 'build/include' \
 		     | grep -v 'build/header_guard' \
+		     | grep -v 'legal/copyright' \
 		     | grep -v 'Found C system header after'
 
 %.cc: %.rl
 	ragel -o $@ $<
-
-%.S: %.o
-	objdump -d -M att -Sl --no-show-raw-insn $< >$@
 
 # Flag overrides for individual targets.
 pixel_parse.o: CXXFLAGS := $(filter-out -MD,$(CXXFLAGS))
