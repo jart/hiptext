@@ -33,7 +33,6 @@ class Artiste {  // The one who lives in your terminal.
   void ShowCursor();
   void HideCursor();
   void ResetCursor();
-  void CleanUp();
 
  private:
   void ComputeDimensions(double media_ratio);

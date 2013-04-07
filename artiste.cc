@@ -25,6 +25,8 @@ DEFINE_bool(equalize, false, "Use the histogram equalizer filter. You should "
 DEFINE_bool(stepthrough, false, "Whether to wait for human to press Return "
             "between frames. Only applicable to movie playbacks");
 
+extern const volatile bool g_done;
+
 inline double RatioOf(int width, int height) {
   return static_cast<double>(width) / static_cast<double>(height);
 }
@@ -46,10 +48,6 @@ Artiste::Artiste(std::ostream& output,
     user_ratio_ = RatioOf(FLAGS_width, FLAGS_height);
     LOG(INFO) << "User enforced ratio: " << user_ratio_;
   }
-}
-
-Artiste::~Artiste() {
-  CleanUp();
 }
 
 void Artiste::ComputeDimensions(double media_ratio) {
@@ -99,6 +97,8 @@ void Artiste::PrintMovie(Movie movie) {
   movie.PrepareRGB(width_, height_);
   HideCursor();
   for (auto graphic : movie) {
+    if (g_done)
+      break;
     ResetCursor();
     if (FLAGS_equalize) {
       // graphic.ToYUV();
@@ -176,11 +176,4 @@ void Artiste::ShowCursor() {
 
 void Artiste::ResetCursor() {
   output_ << "\x1b[H";     // ANSI put cursor in top left.
-}
-
-void Artiste::CleanUp() {
-  // Reset terminal state in all cases.
-  if (cursor_saved_) {
-    ShowCursor();
-  }
 }

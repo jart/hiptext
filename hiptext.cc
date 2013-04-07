@@ -59,7 +59,8 @@ DEFINE_bool(spectrum, false, "Show color spectrum graph");
 static const wchar_t kUpperHalfBlock = L'\u2580';
 static const wchar_t kLowerHalfBlock = L'\u2584';
 static const wchar_t kFullBlock = L'\u2588';
-Artiste* g_artiste_ptr;
+
+volatile bool g_done = false;
 
 void PrintImageXterm256(std::ostream& os, const Graphic& graphic) {
   TermPrinter out(os);
@@ -144,8 +145,7 @@ inline string GetExtension(const string& path) {
 }
 
 void OnCtrlC(int /*signal*/) {
-  g_artiste_ptr->CleanUp();
-  exit(0);
+  g_done = true;
 }
 
 int main(int argc, char** argv) {
@@ -179,7 +179,6 @@ int main(int argc, char** argv) {
     algo = PrintImageNoColor;
   }
   Artiste artiste(std::cout, algo, duo_pixel);
-  g_artiste_ptr = &artiste;
 
   // Did they specify an option that requires no args?
   if (FLAGS_spectrum) {
