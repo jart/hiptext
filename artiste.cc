@@ -88,8 +88,10 @@ getpixelsize(std::ostream& out, std::istream& in, int *pwidth, int *pheight)
 }
 
 Artiste::Artiste(std::ostream& output,
+                 std::istream& input,
                  RenderAlgorithm algorithm,
-                 bool duo_pixel)
+                 bool duo_pixel,
+                 bool use_sixel)
     : output_(output), algorithm_(algorithm), duo_pixel_(duo_pixel) {
   winsize ws;
   PCHECK(ioctl(0, TIOCGWINSZ, &ws) == 0);
@@ -97,6 +99,9 @@ Artiste::Artiste(std::ostream& output,
   // Therefore, double ws_row since characters approximate ~2:1rectangles.
   term_height_ = ws.ws_row * 2;
   term_width_ = ws.ws_col;
+
+  if (use_sixel)
+    getpixelsize(output, input, &term_width_, &term_height_);
 
   // If user provides *both* FLAGS_width and FLAGS_height, remember their
   // desired ratio.

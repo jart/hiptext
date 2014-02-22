@@ -235,7 +235,7 @@ int main(int argc, char** argv) {
   } else {
     algo = PrintImageNoColor;
   }
-  Artiste artiste(std::cout, algo, duo_pixel);
+  Artiste artiste(std::cout, std::cin, algo, duo_pixel, FLAGS_sixel);
 
   // Did they specify an option that requires no args?
   if (FLAGS_spectrum) {
