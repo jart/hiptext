@@ -62,6 +62,59 @@ static const wchar_t kFullBlock = L'\u2588';
 
 volatile bool g_done = false;
 
+// 256 color SIXEL is supported by RLogin, mlterm(X11/fb), and tanasinn.
+// xterm with the option "-ti vt340" is limited up to 16 colors.
+void PrintImageSixel256(std::ostream& os, const Graphic& graphic) {
+  Pixel bg = Pixel(FLAGS_bg);
+  int bg256 = rgb_to_xterm256(bg);
+  int cache;
+  int count;
+  int width = graphic.width();
+  int height = graphic.height();
+  char c;
+
+  os << "\033P0;0;8q\"1;1";
+  for (int y = 0; y < height; ++y) {
+    cache = 0;
+    count = 1;
+    for (int x = 0; x < width; ++x) {
+      int code = rgb_to_xterm256(graphic.Get(x, y).Copy().Opacify(bg));
+      if (count < 255 && cache == code) {
+        ++count;
+      } else {
+        if (!FLAGS_bgprint && code == bg256) {
+          os << "#0";
+        } else {
+          os << "#" << cache;
+        }
+        cache = code;
+        c = (char)(0x3f + (1 << (y % 6)));
+        if (count > 2) {
+          os << '!' << count;
+        } else if (count == 2) {
+          os << c;
+        }
+        os << c;
+        count = 1;
+      }
+    }
+    if (count > 1) {
+      c = (char)(0x3f + (1 << (y % 6)));
+      if (count > 2) {
+        os << "!" << count;
+      } else if (count == 2) {
+        os << c;
+      }
+      os << c;
+    }
+    os << "$";
+    if (y % 6 == 5) {
+      os << "-";
+    }
+  }
+  os << "\033\\";
+}
+
 void PrintImageXterm256(std::ostream& os, const Graphic& graphic) {
   TermPrinter out(os);
   Pixel bg = Pixel(FLAGS_bg);
