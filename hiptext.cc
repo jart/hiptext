@@ -55,6 +55,7 @@ DEFINE_bool(bgprint, false, "Enable explicit styling when printing characters "
 DEFINE_string(space, u8"\u00a0", "The empty character to use when printing. "
               "By default this is a utf8 non-breaking space");
 DEFINE_bool(spectrum, false, "Show color spectrum graph");
+DEFINE_bool(sixel, false, "Use sixel graphics (256 color)");
 
 static const wchar_t kUpperHalfBlock = L'\u2580';
 static const wchar_t kLowerHalfBlock = L'\u2584';
@@ -224,6 +225,9 @@ int main(int argc, char** argv) {
       duo_pixel = true;
     } else if (FLAGS_macterm) {
       algo = PrintImageMacterm;
+      duo_pixel = true;
+    } else if (FLAGS_sixel) {
+      algo = PrintImageSixel256;
       duo_pixel = true;
     } else {
       algo = PrintImageXterm256;
