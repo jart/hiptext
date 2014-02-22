@@ -73,23 +73,39 @@ void PrintImageSixel256(std::ostream& os, const Graphic& graphic) {
   int width = graphic.width();
   int height = graphic.height();
   char c;
+  char slots[256];
+  memset(slots, 0, sizeof(slots));
 
   os << "\033P0;0;8q\"1;1";
+
   for (int y = 0; y < height; ++y) {
-    cache = 0;
+    cache = 256;
     count = 1;
     for (int x = 0; x < width; ++x) {
       int code = rgb_to_xterm256(graphic.Get(x, y).Copy().Opacify(bg));
       if (count < 255 && cache == code) {
         ++count;
       } else {
-        if (!FLAGS_bgprint && code == bg256) {
-          os << "#0";
+        if (!FLAGS_bgprint && cache == bg256) {
+          c = 0x3f;
         } else {
-          os << "#" << cache;
+          c = (char)(0x3f + (1 << (y % 6)));
         }
+        if (!slots[cache]) {
+          const Pixel *pix = g_xterm + cache;
+
+          // emit palette definition
+          os << '#' << cache << ";2;"
+             << static_cast<int>(pix->red() * 100)
+             << ';'
+             << static_cast<int>(pix->green() * 100)
+             << ';'
+             << static_cast<int>(pix->blue() * 100)
+             ;
+          slots[cache] = 1; // set dirty
+        }
+        os << "#" << cache;
         cache = code;
-        c = (char)(0x3f + (1 << (y % 6)));
         if (count > 2) {
           os << '!' << count;
         } else if (count == 2) {
@@ -100,7 +116,11 @@ void PrintImageSixel256(std::ostream& os, const Graphic& graphic) {
       }
     }
     if (count > 1) {
-      c = (char)(0x3f + (1 << (y % 6)));
+      if (!FLAGS_bgprint && cache == bg256) {
+        c = 0x3f;
+      } else {
+        c = (char)(0x3f + (1 << (y % 6)));
+      }
       if (count > 2) {
         os << "!" << count;
       } else if (count == 2) {
