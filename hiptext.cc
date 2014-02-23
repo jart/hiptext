@@ -55,7 +55,9 @@ DEFINE_bool(bgprint, false, "Enable explicit styling when printing characters "
 DEFINE_string(space, u8"\u00a0", "The empty character to use when printing. "
               "By default this is a utf8 non-breaking space");
 DEFINE_bool(spectrum, false, "Show color spectrum graph");
-DEFINE_bool(sixel, false, "Use sixel graphics (256 color)");
+DEFINE_bool(sixel256, false, "Use sixel graphics (256 colors)");
+DEFINE_bool(sixel16, false, "Use sixel graphics (16 colors)");
+DEFINE_bool(sixel2, false, "Use sixel graphics (2 colors)");
 
 static const wchar_t kUpperHalfBlock = L'\u2580';
 static const wchar_t kLowerHalfBlock = L'\u2584';
@@ -255,7 +257,8 @@ int main(int argc, char** argv) {
   } else {
     algo = PrintImageNoColor;
   }
-  Artiste artiste(std::cout, std::cin, algo, duo_pixel, FLAGS_sixel);
+  Artiste artiste(std::cout, std::cin, algo, duo_pixel,
+                  FLAGS_sixel2 || FLAGS_sixel16 || FLAGS_sixel256);
 
   // Did they specify an option that requires no args?
   if (FLAGS_spectrum) {
