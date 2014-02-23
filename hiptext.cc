@@ -31,6 +31,7 @@
 #include "movie.h"
 #include "xterm256.h"
 #include "termprinter.h"
+#include "sixelprinter.h"
 #include "unicode.h"
 
 using std::cout;
@@ -69,73 +70,57 @@ volatile bool g_done = false;
 // xterm with the option "-ti vt340" is limited up to 16 colors.
 void PrintImageSixel256(std::ostream& os, const Graphic& graphic) {
   Pixel bg = Pixel(FLAGS_bg);
-  int bg256 = rgb_to_xterm256(bg);
-  int cache;
-  int count;
+  SixelPrinter out(os, 256, false, FLAGS_bgprint, rgb_to_xterm256(bg));
   int width = graphic.width();
   int height = graphic.height();
-  char c;
-  char slots[256];
-  memset(slots, 0, sizeof(slots));
+  uint8_t (*to_index)(const Pixel&) = rgb_to_xterm256;
 
-  os << "\033P0;0;8q\"1;1";
-
+  out.Start();
   for (int y = 0; y < height; ++y) {
-    cache = 256;
-    count = 1;
     for (int x = 0; x < width; ++x) {
-      int code = rgb_to_xterm256(graphic.Get(x, y).Copy().Opacify(bg));
-      if (count < 255 && cache == code) {
-        ++count;
-      } else {
-        if (!FLAGS_bgprint && cache == bg256) {
-          c = 0x3f;
-        } else {
-          c = (char)(0x3f + (1 << (y % 6)));
-        }
-        if (!slots[cache]) {
-          const Pixel *pix = g_xterm + cache;
-
-          // emit palette definition
-          os << '#' << cache << ";2;"
-             << static_cast<int>(pix->red() * 100)
-             << ';'
-             << static_cast<int>(pix->green() * 100)
-             << ';'
-             << static_cast<int>(pix->blue() * 100)
-             ;
-          slots[cache] = 1; // set dirty
-        }
-        os << "#" << cache;
-        cache = code;
-        if (count > 2) {
-          os << '!' << count;
-        } else if (count == 2) {
-          os << c;
-        }
-        os << c;
-        count = 1;
-      }
+      int code = to_index(graphic.Get(x, y).Copy().Opacify(bg));
+      out.PrintPixel(code);
     }
-    if (count > 1) {
-      if (!FLAGS_bgprint && cache == bg256) {
-        c = 0x3f;
-      } else {
-        c = (char)(0x3f + (1 << (y % 6)));
-      }
-      if (count > 2) {
-        os << "!" << count;
-      } else if (count == 2) {
-        os << c;
-      }
-      os << c;
-    }
-    os << "$";
-    if (y % 6 == 5) {
-      os << "-";
-    }
+    out.LineFeed();
   }
-  os << "\033\\";
+  out.End();
+}
+
+// 16 color SIXEL is supported by xterm with the option "-ti vt340"
+void PrintImageSixel16(std::ostream& os, const Graphic& graphic) {
+  Pixel bg = Pixel(FLAGS_bg);
+  SixelPrinter out(os, 16, false, FLAGS_bgprint, rgb_to_xterm16(bg));
+  int width = graphic.width();
+  int height = graphic.height();
+  uint8_t (*to_index)(const Pixel&) = rgb_to_xterm16;
+
+  out.Start();
+  for (int y = 0; y < height; ++y) {
+    for (int x = 0; x < width; ++x) {
+      int code = to_index(graphic.Get(x, y).Copy().Opacify(bg));
+      out.PrintPixel(code);
+    }
+    out.LineFeed();
+  }
+  out.End();
+}
+
+void PrintImageSixel2(std::ostream& os, const Graphic& graphic) {
+  Pixel bg = Pixel(FLAGS_bg);
+  SixelPrinter out(os, 2, false, false, 0);
+  int width = graphic.width();
+  int height = graphic.height();
+  uint8_t (*to_index)(const Pixel&) = rgb_to_xterm16;
+
+  out.Start();
+  for (int y = 0; y < height; ++y) {
+    for (int x = 0; x < width; ++x) {
+      int code = to_index(graphic.Get(x, y).Copy().Opacify(bg));
+      out.PrintPixel(code);
+    }
+    out.LineFeed();
+  }
+  out.End();
 }
 
 void PrintImageXterm256(std::ostream& os, const Graphic& graphic) {
@@ -248,7 +233,13 @@ int main(int argc, char** argv) {
     } else if (FLAGS_macterm) {
       algo = PrintImageMacterm;
       duo_pixel = true;
-    } else if (FLAGS_sixel) {
+    } else if (FLAGS_sixel2) {
+      algo = PrintImageSixel2;
+      duo_pixel = true;
+    } else if (FLAGS_sixel16) {
+      algo = PrintImageSixel16;
+      duo_pixel = true;
+    } else if (FLAGS_sixel256) {
       algo = PrintImageSixel256;
       duo_pixel = true;
     } else {
