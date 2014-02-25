@@ -42,7 +42,7 @@ getpixelsize(std::ostream& out, std::istream& in, int *pwidth, int *pheight)
   char c;
   termios backup, raw;
   fd_set set;
-  timeval tv = { 0, 300 };
+  timeval tv = { 0, 300 * 1000 }; // wait 300 msec
   int fd_out = fileno(stdout);
   int fd_in = fileno(stdin);
 
@@ -74,7 +74,7 @@ getpixelsize(std::ostream& out, std::istream& in, int *pwidth, int *pheight)
   FD_ZERO(&set);
   FD_SET(fd_in, &set);
 
-  if (select(1, 0, &set, 0, &tv) == 1) {
+  if (select(1, &set, 0, 0, &tv) == 1) {
     in >> c >> c >> c >> c
        >> *pheight >> c >> *pwidth
        >> c;
