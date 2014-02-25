@@ -64,7 +64,7 @@ void SixelPrinter::Start() {
 }
 
 void SixelPrinter::End() {
-  if (sixel_offset_ != ! << 5) {
+  if (sixel_offset_ != 1 << 5) {
     out_ << '-';
   }
   if (is8bit_) {
