@@ -34,7 +34,7 @@ void SixelPrinter::PrintPixel(int n) {
       } else {
         c = 0x3f + sixel_offset_;
       }
-      if (slots_[cache_] != 0) {
+      if (slots_[cache_] == 0) {
         DefineColor(cache_);
         slots_[cache_] = 1;  // set dirty
       }
