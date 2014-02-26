@@ -13,7 +13,7 @@
 SixelPrinter::SixelPrinter(std::ostream& out, int colors,
                            bool is8bit, bool bgprint, int bg)
     :out_(out), colors_(colors), is8bit_(is8bit), bgprint_(bgprint)
-    , bg_(bg), cache_(colors), count_(1), sixel_offset_(1) {
+    , bg_(bg), cache_(colors), count_(0), sixel_offset_(1) {
   if (colors > 2) {
     memset(slots_, 0, sizeof(slots_));
   }
@@ -22,7 +22,10 @@ SixelPrinter::SixelPrinter(std::ostream& out, int colors,
 void SixelPrinter::PrintPixel(int n) {
   char c;
 
-  if (count_ < 0xff && cache_ == n) {
+  if (count_ == 0) {
+    cache_ = n;
+    count_ = 1;
+  } else if (count_ < 0xff && cache_ == n) {
     ++count_;
   } else {
     if (colors_ > 2) {
