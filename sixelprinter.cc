@@ -78,7 +78,7 @@ void SixelPrinter::End() {
 }
 
 void SixelPrinter::LineFeed() {
-  if (count_ > 1) {
+  if (count_ > 0) {
     PrintPixel(colors_);
   }
   cache_ = 0;
