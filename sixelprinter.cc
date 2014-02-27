@@ -22,15 +22,16 @@ SixelPrinter::SixelPrinter(std::ostream& out, int colors,
 void SixelPrinter::PrintPixel(int n) {
   char c;
 
+  // TODO: more smart complession (now simple run-length compression only)
   if (count_ == 0) {
     cache_ = n;
     count_ = 1;
   } else if (count_ < 0xff && cache_ == n) {
     ++count_;
-  } else {
+  } else {  // 16 color or 256 color
     if (colors_ > 2) {
       if (!bgprint_ && cache_ == bg_) {
-        c = 0x3f;
+        c = 0x3f;  // transparent pixel
       } else {
         c = 0x3f + sixel_offset_;
       }
@@ -38,17 +39,18 @@ void SixelPrinter::PrintPixel(int n) {
         DefineColor(cache_);
         slots_[cache_] = 1;  // set dirty
       }
-      out_ << "#" << cache_; // choose color
-    } else {
+      out_ << '#' << cache_; // choose color
+    } else {  //  monochrome
       if (cache_ == 0) {
-        c = 0x3f;
+        c = 0x3f;  // transparent pixel
       } else {
         c = 0x3f + sixel_offset_;
       }
     }
     cache_ = n;
     if (count_ > 2) {
-      out_ << '!' << count_;
+      out_ << '!'  // emit DECGRI (Graphics Repeat Introducer)
+           << count_;
     } else if (count_ == 2) {
       out_ << c;
     }
@@ -58,18 +60,22 @@ void SixelPrinter::PrintPixel(int n) {
 }
 
 void SixelPrinter::Start() {
+  // emit a DCS (Device Control String) introducer
   if (is8bit_) {
     out_ << '\x90';
   } else {
     out_ << "\033P";
   }
-  out_ << "0;0;8q\"1;1";
+
+  out_ << "0;0;8q" // emit SIXEL identifier
+       << "\"1;1"; // specify aspect ratio
 }
 
 void SixelPrinter::End() {
-  if (sixel_offset_ != 1 << 5) {
-    out_ << '-';
+  if (sixel_offset_ != 1) {
+    out_ << '-';  // emit the last DECGNL (Graphics Next Line)
   }
+  // emit a ST (String Terminator)
   if (is8bit_) {
     out_ << '\x9c';
   } else {
@@ -81,14 +87,19 @@ void SixelPrinter::LineFeed() {
   if (count_ > 0) {
     PrintPixel(colors_);
   }
-  cache_ = 0;
-  out_ << '$';
+
+  out_ << '$';  // emit DECGCR (Graphics Carriage Return)
+
   if (sixel_offset_ == 1 << 5) {
-    out_ << '-';
-    sixel_offset_ = 1;
+    out_ << '-';  // emit DECGNL (Graphics Next Line)
+    sixel_offset_ = 1;  // reset sixel offset
   } else {
-    sixel_offset_ <<= 1;
+    sixel_offset_ <<= 1;  // increment sixel offset
   }
+
+  // reset states
+  count_ = 0;
+  cache_ = colors_;
 }
 
 void SixelPrinter::DefineColor(int n) {
