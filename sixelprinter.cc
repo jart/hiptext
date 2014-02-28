@@ -88,12 +88,11 @@ void SixelPrinter::LineFeed() {
     PrintPixel(colors_);
   }
 
-  out_ << '$';  // emit DECGCR (Graphics Carriage Return)
-
   if (sixel_offset_ == 1 << 5) {
     out_ << '-';  // emit DECGNL (Graphics Next Line)
     sixel_offset_ = 1;  // reset sixel offset
   } else {
+    out_ << '$';  // emit DECGCR (Graphics Carriage Return)
     sixel_offset_ <<= 1;  // increment sixel offset
   }
 
