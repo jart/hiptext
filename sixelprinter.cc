@@ -89,6 +89,7 @@ void SixelPrinter::LineFeed() {
   }
 
   if (sixel_offset_ == 1 << 5) {
+    out_ << '$';  // for old mlterm (<= 3.3.1)
     out_ << '-';  // emit DECGNL (Graphics Next Line)
     sixel_offset_ = 1;  // reset sixel offset
   } else {
