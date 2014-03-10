@@ -31,6 +31,6 @@ You need clang or gcc >=4.7. You also need to install:
     ./hiptext --xterm256 whatever.png           # Default
     ./hiptext --nocolor whatever.png
     ./hiptext --nocolor --chars=" .oO0" whatever.png
-    ./hiptext --sixel256 whatever.png           # For 256-color SIXEL terminal such as mlterm
-    ./hiptext --sixel16 whatever.png            # For 16-color SIXEL terminal such as xterm with "-ti vt340 option"
-    ./hiptext --sixel2 whatever.png             # For monochrome SIXEL terminal such as xterm with "-ti vt340 option"
+    ./hiptext --sixel256 whatever.png           # For 256-color SIXEL terminal such as mlterm (>=v3.1.3)
+    ./hiptext --sixel16 whatever.png            # For 16-color SIXEL terminal such as xterm(patch level >= #294) with "-ti vt340 option"
+    ./hiptext --sixel2 whatever.png             # For monochrome SIXEL terminals
