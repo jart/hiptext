@@ -5,6 +5,8 @@
 
 #include <iostream>
 #include <sys/ioctl.h>
+#include <sys/termios.h>
+#include <sys/select.h>
 #include <gflags/gflags.h>
 #include <glog/logging.h>
 
@@ -31,9 +33,65 @@ inline double RatioOf(int width, int height) {
   return static_cast<double>(width) / static_cast<double>(height);
 }
 
+// retrieve pixel size of the terminal using dtterm (sun console) style protocol
+// note that original dtterm reports the size including the title-bar height,
+// but xterm does not.
+inline void
+getpixelsize(std::ostream& out, std::istream& in, int *pwidth, int *pheight)
+{
+  char c;
+  termios backup, raw;
+  fd_set set;
+  timeval tv = { 0, 300 * 1000 }; // wait 300 msec
+  int fd_out = fileno(stdout);
+  int fd_in = fileno(stdin);
+
+  // set default value
+  *pwidth = 200;
+  *pheight = 400;
+
+  if (!isatty(fd_out) || !isatty(fd_in))
+    return;
+
+  if (tcgetattr(fd_in, &backup) < 0) {
+    LOG(INFO) << "tcgetattr is failed";
+    return;
+  }
+  raw = backup;
+  raw.c_iflag &= ~(BRKINT | ICRNL | INPCK | ISTRIP | IXON);
+  raw.c_oflag &= ~(OPOST);
+  raw.c_lflag &= ~(ECHO | ICANON | IEXTEN | ISIG);
+  raw.c_cc[VMIN] = 8;
+  raw.c_cc[VTIME] = 1;
+
+  if (tcsetattr(fd_in, TCSAFLUSH, &raw) < 0) {
+    LOG(INFO) << "tcsetattr is failed";
+    return;
+  }
+
+  out << "\033[14t" << std::flush;
+
+  FD_ZERO(&set);
+  FD_SET(fd_in, &set);
+
+  if (select(1, &set, 0, 0, &tv) == 1) {
+    in >> c >> c >> c >> c
+       >> *pheight >> c >> *pwidth
+       >> c;
+  } else {
+    LOG(INFO) << "select is failed";
+  }
+  if (tcsetattr(fd_in, TCSAFLUSH, &backup) < 0) {
+    LOG(INFO) << "tcsetattr is failed";
+    return;
+  }
+}
+
 Artiste::Artiste(std::ostream& output,
+                 std::istream& input,
                  RenderAlgorithm algorithm,
-                 bool duo_pixel)
+                 bool duo_pixel,
+                 bool use_sixel)
     : output_(output), algorithm_(algorithm), duo_pixel_(duo_pixel) {
   winsize ws;
   PCHECK(ioctl(0, TIOCGWINSZ, &ws) == 0);
@@ -41,6 +99,9 @@ Artiste::Artiste(std::ostream& output,
   // Therefore, double ws_row since characters approximate ~2:1rectangles.
   term_height_ = ws.ws_row * 2;
   term_width_ = ws.ws_col;
+
+  if (use_sixel)
+    getpixelsize(output, input, &term_width_, &term_height_);
 
   // If user provides *both* FLAGS_width and FLAGS_height, remember their
   // desired ratio.

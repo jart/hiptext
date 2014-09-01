@@ -31,6 +31,7 @@
 #include "movie.h"
 #include "xterm256.h"
 #include "termprinter.h"
+#include "sixelprinter.h"
 #include "unicode.h"
 
 using std::cout;
@@ -55,12 +56,72 @@ DEFINE_bool(bgprint, false, "Enable explicit styling when printing characters "
 DEFINE_string(space, u8"\u00a0", "The empty character to use when printing. "
               "By default this is a utf8 non-breaking space");
 DEFINE_bool(spectrum, false, "Show color spectrum graph");
+DEFINE_bool(sixel256, false, "Use sixel graphics (256 colors)");
+DEFINE_bool(sixel16, false, "Use sixel graphics (16 colors)");
+DEFINE_bool(sixel2, false, "Use sixel graphics (2 colors)");
 
 static const wchar_t kUpperHalfBlock = L'\u2580';
 static const wchar_t kLowerHalfBlock = L'\u2584';
 static const wchar_t kFullBlock = L'\u2588';
 
 volatile bool g_done = false;
+
+// 256 color SIXEL is supported by RLogin, mlterm(X11/fb), and tanasinn.
+// xterm with the option "-ti vt340" is limited up to 16 colors.
+void PrintImageSixel256(std::ostream& os, const Graphic& graphic) {
+  Pixel bg = Pixel(FLAGS_bg);
+  SixelPrinter out(os, 256, false, FLAGS_bgprint, rgb_to_xterm256(bg));
+  int width = graphic.width();
+  int height = graphic.height();
+  uint8_t (*to_index)(const Pixel&) = rgb_to_xterm256;
+
+  out.Start();
+  for (int y = 0; y < height; ++y) {
+    for (int x = 0; x < width; ++x) {
+      int code = to_index(graphic.Get(x, y).Copy().Opacify(bg));
+      out.PrintPixel(code);
+    }
+    out.LineFeed();
+  }
+  out.End();
+}
+
+// 16 color SIXEL is supported by xterm with the option "-ti vt340"
+void PrintImageSixel16(std::ostream& os, const Graphic& graphic) {
+  Pixel bg = Pixel(FLAGS_bg);
+  SixelPrinter out(os, 16, false, FLAGS_bgprint, rgb_to_xterm16(bg));
+  int width = graphic.width();
+  int height = graphic.height();
+  uint8_t (*to_index)(const Pixel&) = rgb_to_xterm16;
+
+  out.Start();
+  for (int y = 0; y < height; ++y) {
+    for (int x = 0; x < width; ++x) {
+      int code = to_index(graphic.Get(x, y).Copy().Opacify(bg));
+      out.PrintPixel(code);
+    }
+    out.LineFeed();
+  }
+  out.End();
+}
+
+void PrintImageSixel2(std::ostream& os, const Graphic& graphic) {
+  Pixel bg = Pixel(FLAGS_bg);
+  SixelPrinter out(os, 2, false, false, 0);
+  int width = graphic.width();
+  int height = graphic.height();
+  uint8_t (*to_index)(const Pixel&) = rgb_to_xterm16;
+
+  out.Start();
+  for (int y = 0; y < height; ++y) {
+    for (int x = 0; x < width; ++x) {
+      int code = to_index(graphic.Get(x, y).Copy().Opacify(bg));
+      out.PrintPixel(code);
+    }
+    out.LineFeed();
+  }
+  out.End();
+}
 
 void PrintImageXterm256(std::ostream& os, const Graphic& graphic) {
   TermPrinter out(os);
@@ -172,13 +233,23 @@ int main(int argc, char** argv) {
     } else if (FLAGS_macterm) {
       algo = PrintImageMacterm;
       duo_pixel = true;
+    } else if (FLAGS_sixel2) {
+      algo = PrintImageSixel2;
+      duo_pixel = true;
+    } else if (FLAGS_sixel16) {
+      algo = PrintImageSixel16;
+      duo_pixel = true;
+    } else if (FLAGS_sixel256) {
+      algo = PrintImageSixel256;
+      duo_pixel = true;
     } else {
       algo = PrintImageXterm256;
     }
   } else {
     algo = PrintImageNoColor;
   }
-  Artiste artiste(std::cout, algo, duo_pixel);
+  Artiste artiste(std::cout, std::cin, algo, duo_pixel,
+                  FLAGS_sixel2 || FLAGS_sixel16 || FLAGS_sixel256);
 
   // Did they specify an option that requires no args?
   if (FLAGS_spectrum) {

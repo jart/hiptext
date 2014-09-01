@@ -16,7 +16,8 @@ using RenderAlgorithm = std::function<void(std::ostream&, const Graphic&)>;
 
 class Artiste {  // The one who lives in your terminal.
  public:
-  Artiste(std::ostream& output, RenderAlgorithm algorithm, bool duopixel);
+  Artiste(std::ostream& output, std::istream& input,
+          RenderAlgorithm algorithm, bool duopixel, bool use_sixel);
   ~Artiste();
   // The Artiste refuses such mimicry. (As expected of a hippy.)
   Artiste(const Artiste& a) = delete;

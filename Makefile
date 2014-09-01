@@ -40,6 +40,7 @@ SOURCES = \
 	pixel_parse.o \
 	png.o \
 	termprinter.o \
+	sixelprinter.o \
 	unicode.o \
 	xterm256.o
 
