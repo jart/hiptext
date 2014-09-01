@@ -15,10 +15,7 @@ You need clang or gcc >=4.7. You also need to install:
 
     sudo apt-get install build-essential libpng12-dev libjpeg-dev \
         libfreetype6-dev libgif-dev ragel libavformat-dev libavcodec-dev \
-        libswscale-dev
-    sudo ./install-glog.sh
-    sudo ./install-gflags.sh
-    sudo ldconfig
+        libswscale-dev libgflags-dev libgoogle-glog-dev
 
 ## Invocation
 
