@@ -15,4 +15,5 @@ popd
 rm -rf gflags-$VERSION gflags-$VERSION.tar.gz
 popd
 
-echo -e "\e[1;32msuccess\e[0m"
+echo -e "\033[32msuccess\033[m"
+
