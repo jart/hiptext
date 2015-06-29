@@ -18,7 +18,7 @@ LINK.o       = $(LINK.cc)
 PREFIX      ?= /usr/local
 TARGET_ARCH ?= -march=native
 CXXFLAGS    ?= -g -O3
-CXXFLAGS    += -std=c++11 -Wall -Wextra -Werror
+CXXFLAGS    += -std=c++11 -Wall -Wextra
 CXXFLAGS    += -fno-exceptions -fno-rtti
 LDLIBS      += -lm -lglog -lgflags -lpng -ljpeg
 LDLIBS      += -lavcodec -lavformat -lavutil -lswscale
