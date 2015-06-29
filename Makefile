@@ -13,7 +13,6 @@
 # Create an optimized build:
 #   CXXFLAGS="-O3 -flto -DNDEBUG" make
 
-CXX         ?= g++
 LINK.o       = $(LINK.cc)
 PREFIX      ?= /usr/local
 TARGET_ARCH ?= -march=native
