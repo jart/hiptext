@@ -49,7 +49,7 @@ check: test
 	./test --alsologtostderr --gtest_color=yes
 
 clean:
-	$(RM) test hiptext $(wildcard *.o *.d *.S $(GTEST_DIR)/*.o)
+	$(RM) test hiptext $(wildcard *.o *.d *.S $(GTEST_DIR)/*.o) cpplint.py
 
 install: hiptext
 	install --mode=0755 hiptext $(PREFIX)/bin
@@ -57,8 +57,11 @@ install: hiptext
 uninstall:
 	$(RM) $(PREFIX)/bin/hiptext
 
-lint:
-	cpplint.py $(wildcard *.cc hiptext/*.h) \
+cpplint.py:
+	wget -O $@ https://google-styleguide.googlecode.com/svn/trunk/cpplint/cpplint.py
+
+lint: cpplint.py
+	python cpplint.py $(wildcard *.cc hiptext/*.h) \
 		2>&1 | grep -v 'termprinter\.cc:.*non-const' \
 		     | grep -v 'readability/streams' \
 		     | grep -v 'build/include' \

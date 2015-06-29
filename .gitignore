@@ -6,3 +6,4 @@
 /rickroll*
 /gtest/src/*.o
 /*.swp
+/cpplint.py
