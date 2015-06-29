@@ -17,12 +17,11 @@ SixelPrinter::SixelPrinter(std::ostream& out, int colors,
   if (colors > 2) {
     memset(slots_, 0, sizeof(slots_));
   }
-};
+}
 
 void SixelPrinter::PrintPixel(int n) {
   char c;
-
-  // TODO: more smart complession (now simple run-length compression only)
+  // TODO(saitoha): smarter compression (now simple run-length compression only)
   if (count_ == 0) {
     cache_ = n;
     count_ = 1;
@@ -39,8 +38,8 @@ void SixelPrinter::PrintPixel(int n) {
         DefineColor(cache_);
         slots_[cache_] = 1;  // set dirty
       }
-      out_ << '#' << cache_; // choose color
-    } else {  //  monochrome
+      out_ << '#' << cache_;  // choose color
+    } else {  // monochrome
       if (cache_ == 0) {
         c = 0x3f;  // transparent pixel
       } else {
@@ -67,8 +66,8 @@ void SixelPrinter::Start() {
     out_ << "\033P";
   }
 
-  out_ << "0;0;8q" // emit SIXEL identifier
-       << "\"1;1"; // specify aspect ratio
+  out_ << "0;0;8q"  // emit SIXEL identifier
+       << "\"1;1";  // specify aspect ratio
 }
 
 void SixelPrinter::End() {

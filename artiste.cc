@@ -43,12 +43,11 @@ inline double RatioOf(int width, int height) {
 // note that original dtterm reports the size including the title-bar height,
 // but xterm does not.
 inline void
-getpixelsize(std::ostream& out, std::istream& in, int *pwidth, int *pheight)
-{
+getpixelsize(std::ostream& out, std::istream& in, int *pwidth, int *pheight) {
   char c;
   termios backup, raw;
   fd_set set;
-  timeval tv = { 0, 300 * 1000 }; // wait 300 msec
+  timeval tv = { 0, 300 * 1000 };  // wait 300 msec
   int fd_out = fileno(stdout);
   int fd_in = fileno(stdin);
 
@@ -165,8 +164,9 @@ void Artiste::PrintMovie(Movie movie) {
   HideCursor();
   sighandler_t old_handler = signal(SIGINT, OnCtrlC);
   for (auto graphic : movie) {
-    if (g_done)
+    if (g_done) {
       break;
+    }
     ResetCursor();
     if (FLAGS_equalize) {
       // graphic.ToYUV();

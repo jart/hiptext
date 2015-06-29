@@ -66,7 +66,9 @@ lint: cpplint.py
 		     | grep -v 'build/include' \
 		     | grep -v 'build/header_guard' \
 		     | grep -v 'legal/copyright' \
-		     | grep -v 'Found C system header after'
+		     | grep -v 'Found C system header after' \
+		     | grep -v 'runtime/references' \
+		     | grep -v 'whitespace/parens'
 
 %.cc: %.rl
 	ragel -o $@ $<
