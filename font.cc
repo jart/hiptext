@@ -50,11 +50,11 @@ Graphic LoadLetter(wchar_t letter, const Pixel& fg, const Pixel& bg) {
   const int offset_x = metrics->horiBearingX >> 6;
   const int offset_y = (baseline - metrics->horiBearingY) >> 6;
   Graphic graphic(width, height, bg);
-  for (int y = 0; y < bitmap->rows; ++y) {
+  for (unsigned y = 0; y < bitmap->rows; ++y) {
     int y2 = y + offset_y;
     if (y2 < 0 || y2 >= height)
       continue;
-    for (int x = 0; x < bitmap->width; ++x) {
+    for (unsigned x = 0; x < bitmap->width; ++x) {
       uint8_t grey = bitmap->buffer[y * bitmap->width + x];
       if (grey) {
         int x2 = x + offset_x;
