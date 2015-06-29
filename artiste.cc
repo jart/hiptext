@@ -4,6 +4,7 @@
 #include "artiste.h"
 
 #include <iostream>
+#include <stdio.h>
 #include <sys/ioctl.h>
 #include <sys/termios.h>
 #include <sys/select.h>
