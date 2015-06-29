@@ -5,6 +5,7 @@
 
 #include <iostream>
 #include <stdio.h>
+#include <signal.h>
 #include <sys/ioctl.h>
 #include <sys/termios.h>
 #include <sys/select.h>
@@ -28,7 +29,11 @@ DEFINE_bool(equalize, false, "Use the histogram equalizer filter. You should "
 DEFINE_bool(stepthrough, false, "Whether to wait for human to press Return "
             "between frames. Only applicable to movie playbacks");
 
-extern const volatile bool g_done;
+static volatile bool g_done = false;
+
+static void OnCtrlC(int /*signal*/) {
+  g_done = true;
+}
 
 inline double RatioOf(int width, int height) {
   return static_cast<double>(width) / static_cast<double>(height);
@@ -158,6 +163,7 @@ void Artiste::PrintMovie(Movie movie) {
   ComputeDimensions(RatioOf(movie.width(), movie.height()));
   movie.PrepareRGB(width_, height_);
   HideCursor();
+  sighandler_t old_handler = signal(SIGINT, OnCtrlC);
   for (auto graphic : movie) {
     if (g_done)
       break;
@@ -173,6 +179,7 @@ void Artiste::PrintMovie(Movie movie) {
       std::getline(std::cin, lulz);
     }
   }
+  signal(SIGINT, old_handler);
   ShowCursor();
 }
 

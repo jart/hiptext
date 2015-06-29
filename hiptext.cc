@@ -1,13 +1,6 @@
 // hiptext - Image to Text Converter
 // By Justine Tunney
 
-// #include <unistd.h>
-// #include <sys/stat.h>
-// #include <sys/types.h>
-#include <signal.h>
-// #include <thread>
-
-// #include <algorithm>
 #include <cassert>
 #include <cstdio>
 #include <fstream>
@@ -63,8 +56,6 @@ DEFINE_bool(sixel2, false, "Use sixel graphics (2 colors)");
 static const wchar_t kUpperHalfBlock = L'\u2580';
 static const wchar_t kLowerHalfBlock = L'\u2584';
 static const wchar_t kFullBlock = L'\u2588';
-
-volatile bool g_done = false;
 
 // 256 color SIXEL is supported by RLogin, mlterm(X11/fb), and tanasinn.
 // xterm with the option "-ti vt340" is limited up to 16 colors.
@@ -205,10 +196,6 @@ inline string GetExtension(const string& path) {
   return s;
 }
 
-void OnCtrlC(int /*signal*/) {
-  g_done = true;
-}
-
 int main(int argc, char** argv) {
   // if (!isatty(1))
   //   FLAGS_color = false;
@@ -220,7 +207,6 @@ int main(int argc, char** argv) {
   const char* lang = std::getenv("LANG");
   if (lang == nullptr) lang = "en_US.utf8";
   std::locale::global(std::locale(lang));
-  signal(SIGINT, OnCtrlC);
   InitFont();
   Movie::InitializeMain();
 
