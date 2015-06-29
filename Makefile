@@ -24,10 +24,6 @@ LDLIBS      += -lm -lglog -lgflags -lpng -ljpeg
 LDLIBS      += -lavcodec -lavformat -lavutil -lswscale
 LDLIBS      += $(shell freetype-config --libs)
 
-# ifeq ($(shell hostname),bean)
-# CXXFLAGS += -I/usr/include/x86_64-linux-gnu/c++/4.7
-# endif
-
 SOURCES = \
 	artiste.o \
 	charquantizer.o \
