@@ -74,7 +74,7 @@ pixel_parse.o: CXXFLAGS := $(filter-out -MD,$(CXXFLAGS))
 font.%:        CXXFLAGS += $(shell freetype-config --cflags)
 
 # google-test integration magic.
-GTEST_DIR ?= gtest-1.6.0
+GTEST_DIR ?= gtest
 TESTS = $(GTEST_DIR)/src/gtest-all.o $(GTEST_DIR)/src/gtest_main.o \
         $(patsubst %.cc,%.o,$(wildcard *_test.cc))
 $(TESTS): CXXFLAGS += -I$(GTEST_DIR)/include -I$(GTEST_DIR) -pthread

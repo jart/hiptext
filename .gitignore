@@ -4,6 +4,5 @@
 /test
 /hiptext
 /rickroll*
-/gtest-1.6.0/src/gtest-all.o
-/gtest-1.6.0/src/gtest_main.o
+/gtest/src/*.o
 /*.swp
