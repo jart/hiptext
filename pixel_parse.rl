@@ -4,6 +4,7 @@
 // Complete CSS3/X11 Color Parser Implementation (and more!)
 
 #include "pixel.h"
+#include "unused.h"
 #include <vector>
 #include <glog/logging.h>
 
@@ -28,6 +29,9 @@ inline int Percent(int val) {
 }
 
 Pixel::Pixel(const std::string& name) {
+  MONUnusedParameter(css_color_first_final);
+  MONUnusedParameter(css_color_error);
+  MONUnusedParameter(css_color_en_main);
   CHECK(name.size() > 0);
   int cs;
   const char* f = name.data();

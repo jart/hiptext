@@ -3,7 +3,7 @@
 /*.S
 /test
 /hiptext
-/rickroll*
+/cpplint.py
 /gtest/src/*.o
 /*.swp
-/cpplint.py
+/*.plist

@@ -54,8 +54,6 @@ DEFINE_bool(sixel16, false, "Use sixel graphics (16 colors)");
 DEFINE_bool(sixel2, false, "Use sixel graphics (2 colors)");
 
 static const wchar_t kUpperHalfBlock = L'\u2580';
-static const wchar_t kLowerHalfBlock = L'\u2584';
-static const wchar_t kFullBlock = L'\u2588';
 
 // 256 color SIXEL is supported by RLogin, mlterm(X11/fb), and tanasinn.
 // xterm with the option "-ti vt340" is limited up to 16 colors.
@@ -264,8 +262,6 @@ int main(int argc, char** argv) {
     exit(1);
   }
 
-  // std::thread t(Render, path);
-  // t.join();
   exit(0);
 }
 
