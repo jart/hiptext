@@ -1,6 +1,6 @@
 # hiptext
 
-Hiptext is command line tool for rendering images and videos inside terminals.
+hiptext is command line tool for rendering images and videos inside terminals.
 
 ![Last Supper in Macterm](http://i.imgur.com/7TfrQsL.png)
 
