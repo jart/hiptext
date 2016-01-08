@@ -1,13 +1,12 @@
 # hiptext - Render Images and Videos as Text
 
+Hiptext is command line tool for rendering images and videos inside terminals.
+
 ![Last Supper in Macterm](http://i.imgur.com/7TfrQsL.png)
 
 ![Happy Cat in Macterm](http://i.imgur.com/cr7sSHh.png)
 
 ![Obama in Macterm](http://i.imgur.com/UnfnpMr.png)
-
-Hiptext is a fun little research project of Justine Tunney to find new and
-interesting ways to render images as text, with a lot of help from Serene Han.
 
 ## Dependencies
 
