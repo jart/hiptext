@@ -1,4 +1,4 @@
-# hiptext - Render Images and Videos as Text
+# hiptext
 
 Hiptext is command line tool for rendering images and videos inside terminals.
 
