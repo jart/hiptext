@@ -1,5 +1,6 @@
 // hiptext - Image to Text Converter
 // By Justine Tunney
+//berkemrealtan
 
 #include "xterm256.h"
 #include <gtest/gtest.h>
