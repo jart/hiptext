@@ -55,7 +55,7 @@ Graphic& Graphic::Equalize() {
     return std::min(255, std::max(0, static_cast<int>(v * kBins)));
   };
 
-  // Count the occurence of each color into bins.
+  // Count the occurrence of each color into bins.
   for (int y = 0; y < height_; ++y) {
     for (int x = 0; x < width_; ++x) {
       const Pixel& pixel = Get(x, y);

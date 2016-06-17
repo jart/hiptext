@@ -99,7 +99,7 @@ MactermColor::MactermColor(const Pixel& top, const Pixel& bot) {
 // Terminal.app on Mac OS X is interesting. First of all, it doesn't follow the
 // xterm-256color standard, but that's probably for the best since xterm's
 // palette was obviously chosen by engineers rather than designers. The problem
-// is I'm not quite sure what Terminal.app is doing. It slightly ajusts the
+// is I'm not quite sure what Terminal.app is doing. It slightly adjusts the
 // color when displaying foregrounds and backgrounds but I'm not sure what
 // formula they're using to do it. They also seem to slightly alter colors
 // depending on the terminal theme. The following colors are what I scraped

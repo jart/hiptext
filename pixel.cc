@@ -166,7 +166,7 @@ Pixel& Pixel::Mix(const Pixel& other) {
 
 // http://www.springerreference.com/docs/html/chapterdbid/212829.html
 static double A(double c) {
-  // This is K/S part of the the equations on that website.
+  // This is K/S part of the equations on that website.
   // a = (1 - c)^2 / (2c)
   return std::pow(1.0 - c, 2.0) / (2.0 * max(c, 1e-6));
 }

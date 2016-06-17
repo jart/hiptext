@@ -6,7 +6,7 @@
 #include <glog/logging.h>
 #include "pixel.h"
 
-DEFINE_bool(fast, false, "Use O(1) xterm256 aproximate color quantizer.");
+DEFINE_bool(fast, false, "Use O(1) xterm256 approximate color quantizer.");
 
 static const uint8_t g_cube_steps[] = {0, 95, 135, 175, 215, 255};
 
