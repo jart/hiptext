@@ -18,7 +18,6 @@ class Artiste {  // The one who lives in your terminal.
  public:
   Artiste(std::ostream& output, std::istream& input,
           RenderAlgorithm algorithm, bool duopixel, bool use_sixel);
-  ~Artiste();
   // The Artiste refuses such mimicry. (As expected of a hippy.)
   Artiste(const Artiste& a) = delete;
   void operator=(const Artiste& a) = delete;
