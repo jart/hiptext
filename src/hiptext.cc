@@ -14,18 +14,18 @@
 #include <gflags/gflags.h>
 #include <glog/logging.h>
 
-#include "artiste.h"
-#include "charquantizer.h"
-#include "font.h"
-#include "jpeg.h"
-#include "pixel.h"
-#include "png.h"
-#include "macterm.h"
-#include "movie.h"
-#include "xterm256.h"
-#include "termprinter.h"
-#include "sixelprinter.h"
-#include "unicode.h"
+#include "hiptext/artiste.h"
+#include "hiptext/charquantizer.h"
+#include "hiptext/font.h"
+#include "hiptext/jpeg.h"
+#include "hiptext/pixel.h"
+#include "hiptext/png.h"
+#include "hiptext/macterm.h"
+#include "hiptext/movie.h"
+#include "hiptext/xterm256.h"
+#include "hiptext/termprinter.h"
+#include "hiptext/sixelprinter.h"
+#include "hiptext/unicode.h"
 
 using std::cout;
 using std::string;

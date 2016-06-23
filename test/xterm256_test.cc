@@ -1,9 +1,9 @@
 // hiptext - Image to Text Converter
 // By Justine Tunney
 
-#include "xterm256.h"
+#include "hiptext/xterm256.h"
 #include <gtest/gtest.h>
-#include "pixel.h"
+#include "hiptext/pixel.h"
 
 TEST(Xterm256Test, Basic) {
   EXPECT_EQ(16, rgb_to_xterm256({0, 0, 0}));

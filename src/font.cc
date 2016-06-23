@@ -1,15 +1,15 @@
 // hiptext - Image to Text Converter
 // By Justine Tunney
 
-#include "font.h"
+#include "hiptext/font.h"
 
 #include <ft2build.h>
 #include FT_FREETYPE_H
 #include <gflags/gflags.h>
 #include <glog/logging.h>
 
-#include "graphic.h"
-#include "pixel.h"
+#include "hiptext/graphic.h"
+#include "hiptext/pixel.h"
 
 DEFINE_string(font, "DejaVuSansMono.ttf",
               "The path to the font .ttf file to use.");

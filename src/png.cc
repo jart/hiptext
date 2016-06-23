@@ -1,7 +1,7 @@
 // hiptext - Image to Text Converter
 // By Justine Tunney
 
-#include "png.h"
+#include "hiptext/png.h"
 
 #include <memory>
 #include <vector>
@@ -10,8 +10,8 @@
 #define PNG_SKIP_SETJMP_CHECK
 #include <png.h>
 
-#include "graphic.h"
-#include "pixel.h"
+#include "hiptext/graphic.h"
+#include "hiptext/pixel.h"
 
 Graphic LoadPNG(const std::string& path) {
   FILE* fp = fopen(path.data(), "rb");

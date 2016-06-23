@@ -3,8 +3,8 @@
 
 // Complete CSS3/X11 Color Parser Implementation (and more!)
 
-#include "pixel.h"
-#include "unused.h"
+#include "hiptext/pixel.h"
+#include "hiptext/unused.h"
 #include <vector>
 #include <glog/logging.h>
 

@@ -1,7 +1,7 @@
 // hiptext - Image to Text Converter
 // By Justine Tunney
 
-#include "unicode.h"
+#include "hiptext/unicode.h"
 #include <cstdlib>
 #include <locale>
 #include <glog/logging.h>

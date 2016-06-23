@@ -1,7 +1,7 @@
 // hiptext - Image to Text Converter
 // By Justine Tunney
 
-#include "macterm.h"
+#include "hiptext/macterm.h"
 
 #include <algorithm>
 #include <array>
@@ -11,7 +11,7 @@
 
 #include <glog/logging.h>
 
-#include "pixel.h"
+#include "hiptext/pixel.h"
 
 using std::array;
 using std::distance;

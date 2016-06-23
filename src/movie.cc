@@ -1,7 +1,7 @@
 // hiptext - Image to Text Converter
 // By Serene Han & Justine Tunney
 
-#include "movie.h"
+#include "hiptext/movie.h"
 
 #include <cstring>
 
@@ -12,8 +12,8 @@ extern "C" {  // ffmpeg hates C++ and won't put this in their headers.
 #include <libswscale/swscale.h>
 }
 
-#include "graphic.h"
-#include "pixel.h"
+#include "hiptext/graphic.h"
+#include "hiptext/pixel.h"
 
 Movie::Movie(const std::string& path) {
   format_ = avformat_alloc_context();

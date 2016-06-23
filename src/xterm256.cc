@@ -1,10 +1,10 @@
 // hiptext - Image to Text Converter
 // By Justine Tunney
 
-#include "xterm256.h"
+#include "hiptext/xterm256.h"
 #include <gflags/gflags.h>
 #include <glog/logging.h>
-#include "pixel.h"
+#include "hiptext/pixel.h"
 
 DEFINE_bool(fast, false, "Use O(1) xterm256 approximate color quantizer.");
 

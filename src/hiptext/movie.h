@@ -6,7 +6,7 @@
 
 #include <string>
 
-#include "graphic.h"
+#include "hiptext/graphic.h"
 
 struct AVCodec;
 struct AVCodecContext;

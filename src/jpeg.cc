@@ -1,7 +1,7 @@
 // hiptext - Image to Text Converter
 // By Justine Tunney
 
-#include "jpeg.h"
+#include "hiptext/jpeg.h"
 
 #include <csetjmp>
 #include <memory>
@@ -10,8 +10,8 @@
 #include <glog/logging.h>
 #include <jpeglib.h>
 
-#include "pixel.h"
-#include "graphic.h"
+#include "hiptext/pixel.h"
+#include "hiptext/graphic.h"
 
 static void OnError(j_common_ptr cinfo) {
   char buffer[JMSG_LENGTH_MAX];

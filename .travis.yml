@@ -1,0 +1,35 @@
+language: cpp
+
+dist: trusty
+addons:
+  apt:
+    packages:
+      - libavcodec-dev
+      - libavformat-dev
+      - libfreetype6-dev
+      - libgflags-dev
+      - libgoogle-glog-dev
+      - libjpeg-dev
+      - libpng12-dev
+      - libswscale-dev
+      - ragel
+
+compiler:
+  - clang
+  - gcc
+
+script:
+  - ./autogen.sh
+  - ./configure --disable-silent-rules
+  - make -j2 hiptext hiptext_test
+  - ./hiptext_test
+  - make check
+  - make dist
+  - sudo apt-get remove -y ragel
+  - tar xvzf hiptext-?.?.tar.gz
+  - cd hiptext-?.?
+  - ./configure
+  - make -j2
+  - sudo make install
+  - hiptext --width=80 --nocolor balls.png
+  - hiptext --width=80 --xterm256 balls.png

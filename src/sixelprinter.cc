@@ -1,9 +1,9 @@
 // hiptext - Image to Text Converter
 // By Justine Tunney
 
-#include "sixelprinter.h"
-#include "xterm256.h"
-#include "pixel.h"
+#include "hiptext/sixelprinter.h"
+#include "hiptext/xterm256.h"
+#include "hiptext/pixel.h"
 
 #include <cstring>
 #include <iostream>

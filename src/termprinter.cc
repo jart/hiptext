@@ -1,7 +1,7 @@
 // hiptext - Image to Text Converter
 // By Justine Tunney
 
-#include "termprinter.h"
+#include "hiptext/termprinter.h"
 
 #include <cstring>
 #include <iostream>

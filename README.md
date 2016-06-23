@@ -1,4 +1,4 @@
-# hiptext
+# hiptext [![Build Status](https://travis-ci.org/jart/hiptext.svg?branch=master)](https://travis-ci.org/jart/hiptext)
 
 hiptext is command line tool for rendering images and videos inside terminals.
 
@@ -13,12 +13,13 @@ hiptext is command line tool for rendering images and videos inside terminals.
 You need clang or gcc >=4.7. You also need to install:
 
     sudo apt-get install build-essential libpng12-dev libjpeg-dev \
-        libfreetype6-dev libgif-dev ragel libavformat-dev libavcodec-dev \
+        libfreetype6-dev libavformat-dev libavcodec-dev \
         libswscale-dev libgflags-dev libgoogle-glog-dev
 
 ## Installation
 
-    make
+    ./configure
+    make -j4
     sudo make install
 
 ## Usage
@@ -106,7 +107,3 @@ not the case, you can specify your background color using a CSS or X11 color
 string.
 
     hiptext --bg=white balls.png
-
-## Testing
-
-    make test && ./test

@@ -1,7 +1,7 @@
 // hiptext - Image to Text Converter
 // Serene Han
 
-#include "artiste.h"
+#include "hiptext/artiste.h"
 
 #include <iostream>
 #include <stdio.h>
@@ -12,7 +12,7 @@
 #include <gflags/gflags.h>
 #include <glog/logging.h>
 
-#include "movie.h"
+#include "hiptext/movie.h"
 
 #ifdef __APPLE__
 using sighandler_t = sig_t;

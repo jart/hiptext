@@ -1,12 +1,12 @@
 // hiptext - Image to Text Converter
 // By Justine Tunney
 
-#include "graphic.h"
+#include "hiptext/graphic.h"
 #include <cmath>
 #include <algorithm>
 #include <iostream>
 #include <glog/logging.h>
-#include "pixel.h"
+#include "hiptext/pixel.h"
 
 // Calculate number that's percent between p1 and p2.
 static inline double Lerp(double p1, double p2, double percent) {

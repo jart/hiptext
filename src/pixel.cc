@@ -1,7 +1,7 @@
 // hiptext - Image to Text Converter
 // By Justine Tunney
 
-#include "pixel.h"
+#include "hiptext/pixel.h"
 #include <algorithm>
 #include <cmath>
 #include <glog/logging.h>

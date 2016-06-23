@@ -7,7 +7,7 @@
 #include <functional>
 #include <ostream>
 
-#include "unicode.h"
+#include "hiptext/unicode.h"
 
 class Movie;
 class Graphic;

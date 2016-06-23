@@ -1,11 +1,11 @@
-// hiptext - Image to Text Converter
-// By Justine Tunney
-
-#include "pixel.h"
+#include <glog/logging.h>
 #include <gtest/gtest.h>
 
-TEST(PixelTest, Basic) {
-  EXPECT_TRUE(true);
+int main(int argc, char** argv) {
+  testing::InitGoogleTest(&argc, argv);
+  testing::FLAGS_gtest_death_test_style = "threadsafe";
+  google::InitGoogleLogging(argv[0]);
+  return RUN_ALL_TESTS();
 }
 
 // For Emacs:
