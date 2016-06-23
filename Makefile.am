@@ -7,10 +7,13 @@ EXTRA_DIST = \
 	autogen.sh \
 	balls.png \
 	obama.jpg \
-	$(shell find gtest)
+	$(shell find gtest -type f | grep -v /.deps/ | grep -v \\.o\$)
 
 bin_PROGRAMS = hiptext
 noinst_LIBRARIES = libhiptext.a libgtest.a
+
+distclean-local:
+	rm -f src/pixel_parse.cc
 
 ################################################################################
 ## libhiptext.a
@@ -18,6 +21,7 @@ noinst_LIBRARIES = libhiptext.a libgtest.a
 libhiptext_a_SOURCES = \
 	src/artiste.cc \
 	src/charquantizer.cc \
+	src/css_color.rl \
 	src/font.cc \
 	src/graphic.cc \
 	src/hiptext.cc \
@@ -57,8 +61,6 @@ libhiptext_a_CPPFLAGS = \
 	$(LIBGLOG_CFLAGS) \
 	$(LIBPNG_CFLAGS) \
 	$(LIBSWSCALE_CFLAGS)
-
-src/pixel_parse.cc: src/pixel_parse.rl
 
 ################################################################################
 ## hiptext
@@ -116,5 +118,5 @@ hiptext_test_LDADD = \
 ## miscellaneous
 
 src/%.cc: src/%.rl
-	@echo "  RL    " $@;
+	@echo "  RL      " $@;
 	@$(RAGEL) -G2 -o $@ $<
