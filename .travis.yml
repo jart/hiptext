@@ -33,3 +33,7 @@ script:
   - sudo make install
   - hiptext --width=80 --nocolor balls.png
   - hiptext --width=80 --xterm256 balls.png
+
+notifications:
+  email:
+    on_success: never
