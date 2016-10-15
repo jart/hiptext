@@ -22,6 +22,7 @@
 #include "hiptext/png.h"
 #include "hiptext/macterm.h"
 #include "hiptext/movie.h"
+#include "hiptext/x11.h"
 #include "hiptext/xterm256.h"
 #include "hiptext/termprinter.h"
 #include "hiptext/sixelprinter.h"
@@ -45,10 +46,12 @@ DEFINE_string(bg, "black", "The native background of your terminal specified "
               "you plan copy/pasting the output into something with a white "
               "background like if you were spamming Reddit");
 DEFINE_bool(bgprint, false, "Enable explicit styling when printing characters "
-            "that are nearly identical to the native terminal background");
+              "that are nearly identical to the native terminal background");
 DEFINE_string(space, u8"\u00a0", "The empty character to use when printing. "
               "By default this is a utf8 non-breaking space");
 DEFINE_bool(spectrum, false, "Show color spectrum graph");
+DEFINE_bool(screencast, false, "Screencast desktop. "
+              "Use arrow keys to pan and +/- to zoom.");
 DEFINE_bool(sixel256, false, "Use sixel graphics (256 colors)");
 DEFINE_bool(sixel16, false, "Use sixel graphics (16 colors)");
 DEFINE_bool(sixel2, false, "Use sixel graphics (2 colors)");
@@ -245,6 +248,11 @@ int main(int argc, char** argv) {
   // Did they specify an option that requires no args?
   if (FLAGS_spectrum) {
     artiste.GenerateSpectrum();
+    exit(0);
+  }
+
+  if (FLAGS_screencast) {
+    artiste.PrintX11(X11());
     exit(0);
   }
 

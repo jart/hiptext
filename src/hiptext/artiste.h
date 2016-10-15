@@ -10,6 +10,7 @@
 #include "hiptext/unicode.h"
 
 class Movie;
+class X11;
 class Graphic;
 
 using RenderAlgorithm = std::function<void(std::ostream&, const Graphic&)>;
@@ -24,6 +25,7 @@ class Artiste {  // The one who lives in your terminal.
 
   void PrintImage(Graphic graphic);
   void PrintMovie(Movie movie);
+  void PrintX11(X11 x11);
 
   void GenerateSpectrum();
 
@@ -33,6 +35,7 @@ class Artiste {  // The one who lives in your terminal.
   void ShowCursor();
   void HideCursor();
   void ResetCursor();
+  void ClearScreen();
 
  private:
   void ComputeDimensions(double media_ratio);
