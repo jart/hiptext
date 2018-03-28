@@ -250,12 +250,13 @@ int main(int argc, char** argv) {
   }
   string path = argv[1];
   string extension = GetExtension(path);
+  string uri_sig = "://"; // Given this string signature, assume that it's a video stream
   if (extension == "png") {
     artiste.PrintImage(LoadPNG(path));
   } else if (extension == "jpg" || extension == "jpeg") {
     artiste.PrintImage(LoadJPEG(path));
   } else if (extension == "mov" || extension == "mp4" || extension == "flv" ||
-             extension == "avi" || extension == "mkv") {
+             extension == "avi" || extension == "mkv" || path.find(uri_sig) != string::npos) {
     artiste.PrintMovie(Movie(path));
   } else {
     fprintf(stderr, "Unknown Filetype: %s\n", extension.data());
