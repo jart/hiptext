@@ -22,6 +22,8 @@ AC_CHECK_LIB(jpeg, jpeg_set_defaults, [], [
   AC_MSG_ERROR([error: libjpeg is required])
 ])
 
+AC_PATH_XTRA
+
 PKG_CHECK_MODULES(LIBAVCODEC, libavcodec)
 PKG_CHECK_MODULES(LIBAVFORMAT, libavformat)
 PKG_CHECK_MODULES(LIBAVUTIL, libavutil)

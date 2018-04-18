@@ -32,6 +32,8 @@ libhiptext_a_SOURCES = \
 	src/hiptext/jpeg.h \
 	src/hiptext/macterm.h \
 	src/hiptext/movie.h \
+	src/hiptext/x11.h \
+	src/hiptext/input.h \
 	src/hiptext/pixel.h \
 	src/hiptext/png.h \
 	src/hiptext/sixelprinter.h \
@@ -42,6 +44,8 @@ libhiptext_a_SOURCES = \
 	src/jpeg.cc \
 	src/macterm.cc \
 	src/movie.cc \
+	src/x11.cc \
+	src/input.cc \
 	src/pixel.cc \
 	src/pixel_parse.cc \
 	src/pixel_parse.rl \
@@ -72,6 +76,7 @@ hiptext_CPPFLAGS = $(libhiptext_a_CPPFLAGS)
 hiptext_LDADD = \
 	libhiptext.a \
 	-ljpeg \
+	-lX11 \
 	$(LIBAVCODEC_LIBS) \
 	$(LIBAVFORMAT_LIBS) \
 	$(LIBAVUTIL_LIBS) \

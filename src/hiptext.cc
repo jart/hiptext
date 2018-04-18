@@ -22,6 +22,7 @@
 #include "hiptext/png.h"
 #include "hiptext/macterm.h"
 #include "hiptext/movie.h"
+#include "hiptext/x11.h"
 #include "hiptext/xterm256.h"
 #include "hiptext/termprinter.h"
 #include "hiptext/sixelprinter.h"
@@ -45,10 +46,12 @@ DEFINE_string(bg, "black", "The native background of your terminal specified "
               "you plan copy/pasting the output into something with a white "
               "background like if you were spamming Reddit");
 DEFINE_bool(bgprint, false, "Enable explicit styling when printing characters "
-            "that are nearly identical to the native terminal background");
+              "that are nearly identical to the native terminal background");
 DEFINE_string(space, u8"\u00a0", "The empty character to use when printing. "
               "By default this is a utf8 non-breaking space");
 DEFINE_bool(spectrum, false, "Show color spectrum graph");
+DEFINE_bool(screencast, false, "Screencast desktop. "
+              "Use arrow keys to pan and +/- to zoom.");
 DEFINE_bool(sixel256, false, "Use sixel graphics (256 colors)");
 DEFINE_bool(sixel16, false, "Use sixel graphics (16 colors)");
 DEFINE_bool(sixel2, false, "Use sixel graphics (2 colors)");
@@ -70,7 +73,8 @@ void PrintImageSixel256(std::ostream& os, const Graphic& graphic) {
       int code = to_index(graphic.Get(x, y).Copy().Opacify(bg));
       out.PrintPixel(code);
     }
-    out.LineFeed();
+    if (y < height - 1)
+      out.LineFeed();
   }
   out.End();
 }
@@ -89,7 +93,8 @@ void PrintImageSixel16(std::ostream& os, const Graphic& graphic) {
       int code = to_index(graphic.Get(x, y).Copy().Opacify(bg));
       out.PrintPixel(code);
     }
-    out.LineFeed();
+    if (y < height - 1)
+      out.LineFeed();
   }
   out.End();
 }
@@ -107,7 +112,8 @@ void PrintImageSixel2(std::ostream& os, const Graphic& graphic) {
       int code = to_index(graphic.Get(x, y).Copy().Opacify(bg));
       out.PrintPixel(code);
     }
-    out.LineFeed();
+    if (y < height - 1)
+      out.LineFeed();
   }
   out.End();
 }
@@ -127,7 +133,8 @@ void PrintImageXterm256(std::ostream& os, const Graphic& graphic) {
       out << FLAGS_space;
     }
     out.Reset();
-    out << "\n";
+    if (y < graphic.height() - 1)
+      out << "\n";
   }
 }
 
@@ -145,7 +152,8 @@ void PrintImageXterm256Unicode(std::ostream& os, const Graphic& graphic) {
       out << kUpperHalfBlock;
     }
     out.Reset();
-    out << "\n";
+    if (y < height - 2)
+      out << "\n";
   }
 }
 
@@ -162,7 +170,8 @@ void PrintImageMacterm(std::ostream& os, const Graphic& graphic) {
       out << color.symbol();
     }
     out.Reset();
-    out << "\n";
+    if (y < height - 2)
+      out << "\n";
   }
 }
 
@@ -179,7 +188,8 @@ void PrintImageNoColor(std::ostream& os, const Graphic& graphic) {
         os << quantizer.Quantize(static_cast<int>(pixel.grey() * 255));
       }
     }
-    cout << "\n";
+    if (y < graphic.height() - 1)
+      cout << "\n";
   }
 }
 
@@ -241,6 +251,11 @@ int main(int argc, char** argv) {
     exit(0);
   }
 
+  if (FLAGS_screencast) {
+    artiste.PrintX11(X11());
+    exit(0);
+  }
+
   // Otherwise get an arg.
   if (argc < 2) {
     fprintf(stderr, "Missing file argument.\n"
@@ -250,12 +265,13 @@ int main(int argc, char** argv) {
   }
   string path = argv[1];
   string extension = GetExtension(path);
+  string uri_sig = "://"; // Given this string signature, assume that it's a video stream
   if (extension == "png") {
     artiste.PrintImage(LoadPNG(path));
   } else if (extension == "jpg" || extension == "jpeg") {
     artiste.PrintImage(LoadJPEG(path));
   } else if (extension == "mov" || extension == "mp4" || extension == "flv" ||
-             extension == "avi" || extension == "mkv") {
+             extension == "avi" || extension == "mkv" || path.find(uri_sig) != string::npos) {
     artiste.PrintMovie(Movie(path));
   } else {
     fprintf(stderr, "Unknown Filetype: %s\n", extension.data());

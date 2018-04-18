@@ -15,6 +15,12 @@ extern "C" {  // ffmpeg hates C++ and won't put this in their headers.
 #include "hiptext/graphic.h"
 #include "hiptext/pixel.h"
 
+#if (LIBAVFORMAT_VERSION_INT) > AV_VERSION_INT(55, 16, 0)
+#define PIX_FMT_RGB24 AV_PIX_FMT_RGB24
+#define avcodec_alloc_frame() av_frame_alloc()
+#define av_free_packet(packet) av_packet_unref(packet)
+#endif
+
 Movie::Movie(const std::string& path) {
   format_ = avformat_alloc_context();
 
