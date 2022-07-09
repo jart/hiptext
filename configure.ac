@@ -47,11 +47,14 @@ AC_SUBST(LIBGFLAGS_CFLAGS)
 AC_SUBST(LIBGFLAGS_LIBS)
 
 AC_CHECK_PROGS(FREETYPE, freetype-config)
-if test -z "$FREETYPE"; then
-  AC_MSG_ERROR([error: libfreetype-dev is required])
+if test -n "$FREETYPE"; then
+  LIBFREETYPE_CFLAGS="`$FREETYPE --cflags`"
+  LIBFREETYPE_LIBS="`$FREETYPE --libs`"
+else
+  AC_MSG_WARN([freetype-config not found; guessing flags])
+  LIBFREETYPE_CFLAGS="-I/usr/include/freetype2"
+  LIBFREETYPE_LIBS="-lfreetype"
 fi
-LIBFREETYPE_CFLAGS="`$FREETYPE --cflags`"
-LIBFREETYPE_LIBS="`$FREETYPE --libs`"
 AC_SUBST(LIBFREETYPE_CFLAGS)
 AC_SUBST(LIBFREETYPE_LIBS)
 

@@ -26,6 +26,10 @@ You need clang or gcc >=4.7. You also need to install:
     make -j4
     sudo make install
 
+If you get compile or link errors relating to freetype, and you do not have
+`freetype-config(1)` on your path, try modifying `Makefile` to adjust the
+`LIBFREETYPE_CFLAGS` and `LIBFREETYPE_LIBS` for your system.
+
 ## Usage
 
 ### Images
