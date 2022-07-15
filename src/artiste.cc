@@ -13,6 +13,7 @@
 #include <glog/logging.h>
 
 #include "hiptext/movie.h"
+#include "hiptext/x11.h"
 
 #ifdef __APPLE__
 using sighandler_t = sig_t;
@@ -37,6 +38,12 @@ static volatile bool g_done = false;
 
 static void OnCtrlC(int /*signal*/) {
   g_done = true;
+}
+
+static void SleepFPS(int fps) {
+  int ms = 1000 / fps;
+  timespec req = {ms / 1000, ms % 1000 * 1000000};
+  nanosleep(&req, nullptr);
 }
 
 inline double RatioOf(int width, int height) {
@@ -187,6 +194,37 @@ void Artiste::PrintMovie(Movie movie) {
   ShowCursor();
 }
 
+void Artiste::PrintX11(X11 x11) {
+  x11.InitializeMain();
+  ComputeDimensions(RatioOf(x11.grab_width, x11.grab_height));
+  x11.TermUpdate(width_, height_);
+  HideCursor();
+  ClearScreen();
+  sighandler_t old_handler = signal(SIGINT, OnCtrlC);
+  for (auto graphic : x11) {
+    if (g_done) {
+      break;
+    }
+    ResetCursor();
+    if (FLAGS_equalize) {
+      graphic.Equalize();
+    }
+    algorithm_(output_, graphic.BilinearScale(width_, height_));
+    if (x11.HandleInput()){
+      ComputeDimensions(RatioOf(x11.grab_width, x11.grab_height));
+      x11.TermUpdate(width_, height_);
+    }
+    SleepFPS(25);
+    if (FLAGS_stepthrough) {
+      string lulz;
+      std::getline(std::cin, lulz);
+    }
+  }
+  signal(SIGINT, old_handler);
+  x11.DestroyImage();
+  ShowCursor();
+}
+
 void Artiste::GenerateSpectrum() {
   int width = term_width_;
   int height = term_height_ * 2 - 2;
@@ -249,6 +287,10 @@ void Artiste::ShowCursor() {
 
 void Artiste::ResetCursor() {
   output_ << "\x1b[H";     // ANSI put cursor in top left.
+}
+
+void Artiste::ClearScreen() {
+  output_ << "\x1b[2J";     // ANSI clear screen to background colour.
 }
 
 // For Emacs:
