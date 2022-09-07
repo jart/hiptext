@@ -70,7 +70,8 @@ void PrintImageSixel256(std::ostream& os, const Graphic& graphic) {
       int code = to_index(graphic.Get(x, y).Copy().Opacify(bg));
       out.PrintPixel(code);
     }
-    out.LineFeed();
+    if (y < height - 1)
+      out.LineFeed();
   }
   out.End();
 }
@@ -89,7 +90,8 @@ void PrintImageSixel16(std::ostream& os, const Graphic& graphic) {
       int code = to_index(graphic.Get(x, y).Copy().Opacify(bg));
       out.PrintPixel(code);
     }
-    out.LineFeed();
+    if (y < height - 1)
+      out.LineFeed();
   }
   out.End();
 }
@@ -107,7 +109,8 @@ void PrintImageSixel2(std::ostream& os, const Graphic& graphic) {
       int code = to_index(graphic.Get(x, y).Copy().Opacify(bg));
       out.PrintPixel(code);
     }
-    out.LineFeed();
+    if (y < height - 1)
+      out.LineFeed();
   }
   out.End();
 }
@@ -127,7 +130,8 @@ void PrintImageXterm256(std::ostream& os, const Graphic& graphic) {
       out << FLAGS_space;
     }
     out.Reset();
-    out << "\n";
+    if (y < graphic.height() - 1)
+      out << "\n";
   }
 }
 
@@ -145,7 +149,8 @@ void PrintImageXterm256Unicode(std::ostream& os, const Graphic& graphic) {
       out << kUpperHalfBlock;
     }
     out.Reset();
-    out << "\n";
+    if (y < height - 2)
+      out << "\n";
   }
 }
 
@@ -162,7 +167,8 @@ void PrintImageMacterm(std::ostream& os, const Graphic& graphic) {
       out << color.symbol();
     }
     out.Reset();
-    out << "\n";
+    if (y < height - 2)
+      out << "\n";
   }
 }
 
@@ -179,7 +185,8 @@ void PrintImageNoColor(std::ostream& os, const Graphic& graphic) {
         os << quantizer.Quantize(static_cast<int>(pixel.grey() * 255));
       }
     }
-    cout << "\n";
+    if (y < graphic.height() - 1)
+      cout << "\n";
   }
 }
 
